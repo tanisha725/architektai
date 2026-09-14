@@ -10,7 +10,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="mt-12 w-full max-w-2xl">
+      <div className="mt-12 w-full max-w-4xl">
         <DesignInputForm />
       </div>
     </div>

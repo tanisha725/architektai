@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { RequirementsResult } from "@/components/requirements-result";
+import type { AnalyzedRequirements } from "@/types/requirements";
 
 const EXAMPLE_PROMPTS = [
   "Design Instagram for 10 million users. Users can create accounts, upload photos and videos, follow other users, view a feed, like and comment on posts, receive notifications, and send messages.",
@@ -14,6 +16,7 @@ export function DesignInputForm() {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requirements, setRequirements] = useState<AnalyzedRequirements | null>(null);
 
   function handleExampleClick(example: string) {
     setDescription(example);
@@ -28,10 +31,27 @@ export function DesignInputForm() {
 
     setError(null);
     setIsSubmitting(true);
+    setRequirements(null);
 
-    // Wiring to the requirement analyzer API comes in Phase 3-4.
-    console.log("Would submit:", description);
-    setIsSubmitting(false);
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error ?? "Something went wrong analyzing your description.");
+      }
+
+      const data = await response.json();
+      setRequirements(data.requirements);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unexpected error.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -64,8 +84,14 @@ export function DesignInputForm() {
         size="lg"
         className="self-start"
       >
-        {isSubmitting ? "Generating..." : "Generate Design"}
+        {isSubmitting ? "Analyzing..." : "Generate Design"}
       </Button>
+
+      {requirements && (
+        <div className="mt-4">
+          <RequirementsResult requirements={requirements} />
+        </div>
+      )}
     </div>
   );
 }
