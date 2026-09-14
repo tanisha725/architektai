@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RequirementsResult } from "@/components/requirements-result";
+import { ScaleEstimator } from "@/components/scale-estimator";
+import { extractApproxUserCount } from "@/lib/scale-estimator";
 import type { AnalyzedRequirements } from "@/types/requirements";
 
 const EXAMPLE_PROMPTS = [
@@ -17,6 +19,7 @@ export function DesignInputForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requirements, setRequirements] = useState<AnalyzedRequirements | null>(null);
+  const [approxUserCount, setApproxUserCount] = useState<number | undefined>(undefined);
 
   function handleExampleClick(example: string) {
     setDescription(example);
@@ -47,6 +50,7 @@ export function DesignInputForm() {
 
       const data = await response.json();
       setRequirements(data.requirements);
+      setApproxUserCount(extractApproxUserCount(description) ?? undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error.");
     } finally {
@@ -88,8 +92,9 @@ export function DesignInputForm() {
       </Button>
 
       {requirements && (
-        <div className="mt-4">
+        <div className="mt-4 flex flex-col gap-8">
           <RequirementsResult requirements={requirements} />
+          <ScaleEstimator key={approxUserCount ?? "default"} initialTotalUsers={approxUserCount} />
         </div>
       )}
     </div>
