@@ -91,6 +91,40 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 3 + 4 — Requirement Input Wiring & Rule-Based Analyzer
+
+### Deferring AI, deliberately
+- **What**: Built the requirement analyzer as a pure heuristic function (regex + keyword matching) instead of calling an LLM, even though the master plan's "Requirement Analyzer" phase comes before its "Structured AI Output" phase.
+- **Why here**: A genuinely good analyzer needs an LLM, but front-loading LLM integration would mean setting up API keys and cost/latency concerns before the rest of the pipeline (UI → API route → structured display) is even proven to work end-to-end. Building the dumb version first de-risks the plumbing.
+- **Takeaway**: When a "smart" component and its surrounding pipeline are both unproven, build a fake/simple version of the smart part first to validate the pipeline, then swap the internals. The interface (`AnalyzedRequirements` type, `/api/analyze` route) doesn't need to change when Phase 6 swaps regex for an LLM call.
+
+### Facts vs. assumptions as a first-class data shape
+- **What**: Every `RequirementItem` carries a `source: "user-stated" | "assumed"` tag, not just text.
+- **Why here**: This is a core product requirement — the app must visibly distinguish what the user actually said from what the system inferred. Baking it into the type from day one (rather than bolting it on later) means the UI, the future LLM prompt, and the schema (Phase 6) all agree on this distinction from the start.
+- **Takeaway**: Encoding a product requirement directly into a type is cheaper than enforcing it by convention — TypeScript won't let a new code path silently produce an item without a `source`.
+
+### Pure functions as an architecture choice
+- **What**: `analyzeRequirements()` in `requirement-analyzer.ts` takes a string, returns structured data, and does no I/O (no fetch, no DB, no console output).
+- **Why here**: The API route (`route.ts`) handles all HTTP concerns (parsing the request, validating input, returning status codes); the analyzer only handles the text-to-structure logic. This separation is what makes it trivial to unit test later (Phase 19) and trivial to replace with an LLM call in Phase 6 without touching the route's error handling.
+- **Takeaway**: Keeping "business logic" and "I/O/framework glue" in separate functions is a general pattern, not a Next.js-specific one — it pays off any time you expect a piece to be tested or swapped independently.
+
+### try/catch/finally for async UI state
+- **What**: `handleSubmit` wraps the `fetch` call in `try { ... } catch (err) { setError(...) } finally { setIsSubmitting(false) }`.
+- **Why here**: `finally` guarantees the loading spinner turns off whether the request succeeds, fails with a bad status code, or the network fails entirely — there's no path that leaves the button stuck saying "Analyzing...".
+- **Takeaway**: For any async operation tied to UI state, the "did it work" state and the "are we still waiting" state are separate concerns — `finally` is specifically for the second one, and it's easy to forget when you only think about the success case.
+
+### API input validation order
+- **What**: The route parses JSON first (catching malformed request bodies), *then* checks the parsed `description` field's type and length, *then* calls the pure analyzer function.
+- **Why here**: Validate the outer shape before the inner content — trying to check `description.length` before confirming `body` is even valid JSON would throw an unhandled exception instead of a clean 400 response.
+- **Takeaway**: Input validation is layered from "is this even parseable" outward to "is this semantically valid" — checking them in the wrong order turns a bad request into a server crash instead of a handled error.
+
+### Real limitation observed by testing, not just imagined
+- **What**: Ran the analyzer against "upload photos and videos" and "like and comment on posts" — the clause-splitting on "and" cut them into "Upload photos" (kept) + "videos" (dropped, no verb) and "Like" (bare) + "Comment on posts" (kept).
+- **Why it matters**: This is naive text splitting hitting its ceiling — it has no concept that "videos" is a second object of the same verb "upload." Confirmed concretely (via curl, not just reasoning about the regex) exactly the kind of gap an LLM-based analyzer (Phase 6) will close, since an LLM understands compound objects and conjunctions contextually rather than splitting blindly on the word "and."
+- **Takeaway**: Testing against real input surfaces concrete, demonstrable gaps — useful both for prioritizing the Phase 6 upgrade and for a good "before/after" story if this project comes up in an interview.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
