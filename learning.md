@@ -218,6 +218,22 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 6.5 continued — Getting Gemini Actually Working
+
+### Even a cross-verified model name can be stale by the time you call it
+- **What**: The model name `gemini-2.5-flash` was cross-checked against three independent GitHub sources (README, sample file, constants file) before being written into the code - and it still turned out to be wrong. The live API returned a 404: "This model is no longer available to new users. Please update your code to use models/gemini-3.6-flash."
+- **Why it happened**: Documentation and even a package's own bundled sample code can lag behind what the live API actually accepts, especially for fast-moving model lineups. Cross-checking multiple sources rules out *hallucination* (the first WebFetch attempt) but not *staleness* (every source agreeing, while still being outdated).
+- **How it was caught**: Not by more research - by actually calling the real API with a real key and reading the real error message. The error was more authoritative than any documentation, because it came directly from the system being integrated with, not a description of it.
+- **Takeaway**: For fast-moving external APIs, "verified against docs" and "actually works" are different claims. The only fully reliable verification is a live call against the real service with real credentials - which is exactly why this phase's fallback design (catch the error, log it, degrade gracefully) mattered in practice, not just in theory: the app kept working (via the rule-based fallback) for every test made *before* the working model name was found, instead of hard-failing.
+
+### Debugging "it should be working but isn't" - checking the obvious layer first
+- **What**: After fixing the env var and restarting the dev server, the API still reported `source: "rule-based"` - looked like the key still wasn't being picked up. The actual cause: a stale dev server process was still running on port 3000 from *before* the key was saved, so the freshly-started server (with the correct env) got bumped to port 3001, and all testing was hitting the old, keyless process the whole time.
+- **Why it happened**: `npm run dev &` in the background doesn't get cleanly killed by a later `lsof -ti:3000 | xargs kill` if a previous instance is already occupying that port under a different, untracked PID - background processes started in earlier turns can outlive the assumption that "restarting the server" means only one is running.
+- **How it was caught**: Read the actual dev server log output rather than assuming the API response was the full picture - it explicitly said "Port 3000 is in use... using available port 3001 instead," which immediately explained the stale result.
+- **Takeaway**: When behavior doesn't match a code change you just made, check whether the code you changed is actually the code that's running before debugging the logic itself - a stale process on the expected port is a classic, easy-to-miss version of "it's not picking up my change."
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
