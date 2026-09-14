@@ -1,4 +1,4 @@
-import type { AnalyzedRequirements, RequirementItem } from "@/types/requirements";
+import type { AnalyzedRequirements, RequirementItem } from "@/lib/schemas/requirements-schema";
 
 // Verbs that signal "the user described an action the system must support."
 // This is a heuristic, not NLP - it's why Phase 6 replaces this with an LLM.

@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RequirementsResult } from "@/components/requirements-result";
 import { ScaleEstimator } from "@/components/scale-estimator";
 import { extractApproxUserCount } from "@/lib/scale-estimator";
-import type { AnalyzedRequirements } from "@/types/requirements";
+import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 
 const EXAMPLE_PROMPTS = [
   "Design Instagram for 10 million users. Users can create accounts, upload photos and videos, follow other users, view a feed, like and comment on posts, receive notifications, and send messages.",
@@ -19,6 +19,7 @@ export function DesignInputForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requirements, setRequirements] = useState<AnalyzedRequirements | null>(null);
+  const [analysisSource, setAnalysisSource] = useState<"ai" | "rule-based" | null>(null);
   const [approxUserCount, setApproxUserCount] = useState<number | undefined>(undefined);
 
   function handleExampleClick(example: string) {
@@ -50,6 +51,7 @@ export function DesignInputForm() {
 
       const data = await response.json();
       setRequirements(data.requirements);
+      setAnalysisSource(data.source ?? null);
       setApproxUserCount(extractApproxUserCount(description) ?? undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error.");
@@ -93,6 +95,10 @@ export function DesignInputForm() {
 
       {requirements && (
         <div className="mt-4 flex flex-col gap-8">
+          <p className="text-xs text-muted-foreground">
+            Analyzed by:{" "}
+            {analysisSource === "ai" ? "Claude (AI)" : "rule-based analyzer (no API key configured)"}
+          </p>
           <RequirementsResult requirements={requirements} />
           <ScaleEstimator key={approxUserCount ?? "default"} initialTotalUsers={approxUserCount} />
         </div>

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { AnalyzedRequirements, RequirementItem } from "@/types/requirements";
+import type { AnalyzedRequirements, RequirementItem } from "@/lib/schemas/requirements-schema";
 
 function RequirementList({ items }: { items: RequirementItem[] }) {
   if (items.length === 0) {

@@ -1,5 +1,24 @@
 import { NextResponse } from "next/server";
 import { analyzeRequirements } from "@/lib/requirement-analyzer";
+import { analyzeWithAI } from "@/lib/ai/analyze-with-ai";
+import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
+
+async function getRequirements(description: string): Promise<{
+  requirements: AnalyzedRequirements;
+  source: "ai" | "rule-based";
+}> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return { requirements: analyzeRequirements(description), source: "rule-based" };
+  }
+
+  try {
+    const requirements = await analyzeWithAI(description);
+    return { requirements, source: "ai" };
+  } catch (err) {
+    console.error("AI analysis failed, falling back to rule-based analyzer:", err);
+    return { requirements: analyzeRequirements(description), source: "rule-based" };
+  }
+}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -19,6 +38,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const requirements = analyzeRequirements(description);
-  return NextResponse.json({ requirements });
+  const { requirements, source } = await getRequirements(description);
+  return NextResponse.json({ requirements, source });
 }
