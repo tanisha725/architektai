@@ -149,6 +149,30 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 6 — Structured AI Output + Validation
+
+### Zod schemas vs. TypeScript interfaces
+- **What**: A TypeScript `interface` is a compile-time-only contract - it's erased when the code actually runs, so it can't stop bad data at runtime. A Zod schema (`z.object({...})`) is a real object your code can call `.parse()` on against actual data, and `z.infer<typeof Schema>` generates the TypeScript type from it.
+- **Why here**: An LLM can return malformed or unexpected JSON no matter how carefully you prompt it. `AnalyzedRequirementsSchema` in `requirements-schema.ts` replaced the old hand-written `interface` from Phase 3-4 - one definition now serves as both the runtime validator and the type source, so they can't drift out of sync the way two separate definitions could.
+- **Takeaway**: "Structured AI output" isn't a prompting technique - it's a runtime validation discipline. The type system alone was never going to be enough once external, non-deterministic input (the LLM) entered the picture.
+
+### Structured outputs at the API level
+- **What**: `client.messages.parse({ output_config: { format: zodOutputFormat(schema) } })` constrains Claude's response to match the schema, and returns `response.parsed_output` - already validated, or `null` if it didn't parse.
+- **Why here**: This is stronger than "ask the model to return JSON in the prompt and hope." The schema is passed as part of the actual API request, not just prose instructions the model could ignore or drift from.
+- **Takeaway**: When an SDK offers a structured-output mode, prefer it over prompt-engineering your way to reliable JSON - it moves the guarantee from "the model usually complies" to "the API enforces the shape."
+
+### Graceful degradation instead of a hard dependency
+- **What**: `/api/analyze` checks for `ANTHROPIC_API_KEY` before attempting the AI call, and falls back to the Phase 3-4 rule-based analyzer both when no key is set and when the AI call throws for any reason (network failure, malformed response, rate limit).
+- **Why here**: This let Phase 6 ship and be fully tested (build, lint, the fallback path end-to-end in a real browser) before an API key existed - the app was never in a broken state waiting on external setup. It also means a transient API outage in production degrades the analyzer's quality instead of taking the whole feature down.
+- **Takeaway**: When a feature depends on an external service, design the "service unavailable" path as a first-class case from the start, not an afterthought - it's what let this phase be built and verified incrementally instead of blocking on credentials.
+
+### `.gitignore` patterns can be too broad
+- **What**: The scaffold's `.gitignore` had `.env*`, which also matched `.env.local.example` - a template file that's *supposed* to be committed (it documents which env vars the project needs, with no real secret in it).
+- **Why it matters**: Caught this before committing by running `git check-ignore -v` and `git status` on the new file, rather than assuming the pattern was fine. A negation rule (`!.env.local.example`) fixed it.
+- **Takeaway**: A broad ignore pattern can silently swallow files you actually want tracked - worth explicitly checking `git status` on new files rather than trusting `git add -A` did the right thing, especially right after scaffolding tools write their own `.gitignore`.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
