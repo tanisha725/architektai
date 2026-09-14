@@ -35,7 +35,7 @@ export async function analyzeWithAI(description: string): Promise<AnalyzedRequir
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.6-flash",
     contents: description,
     config: {
       systemInstruction: SYSTEM_PROMPT,
