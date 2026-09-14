@@ -125,6 +125,30 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 5 — Scale Estimator
+
+### The back-of-envelope formula chain
+- **What**: Total users -> DAU (% of total) -> daily requests (DAU x requests/user/day) -> average QPS (daily requests / 86,400 seconds) -> peak QPS (average QPS x peak multiplier) -> storage/day and storage/year.
+- **Why here**: This is the actual sequence used in system design interviews to go from "10 million users" to "how many servers do we need." Each step is one multiplication or division — the skill isn't the math, it's knowing which quantities to multiply and in what order, and being explicit about which numbers are assumptions vs. given facts.
+- **Takeaway**: Peak QPS, not average QPS, is what determines provisioning — a system sized for average load falls over during real traffic spikes (launches, viral moments, daily peak hours). The peak multiplier (commonly 2x-5x) is itself an assumption, not something you can compute from average alone without real traffic data.
+
+### Editable assumptions as a design principle
+- **What**: Every number feeding the calculation (DAU %, requests/user/day, peak multiplier, avg upload size) is a live input, not a hardcoded constant — changing one instantly recomputes all downstream numbers via `useMemo`.
+- **Why here**: Back-of-envelope numbers are only as good as their assumptions, and different reasonable engineers will pick different multipliers. Hiding these as constants would make the tool feel authoritative about numbers that are genuinely debatable — surfacing them as editable fields is what makes the output honest.
+- **Takeaway**: This mirrors the "user-stated vs. assumed" distinction from Phase 3-4 at a different layer — there, we tagged *requirements*; here, we expose the *assumptions behind a calculation* directly as UI, rather than a label.
+
+### React's `key` prop controls identity, not just rendering
+- **What**: `<ScaleEstimator key={approxUserCount ?? "default"} .../>` — changing the `key` forces React to treat it as a brand-new component instance (fresh `useState`), instead of reusing the existing one across re-renders.
+- **Why here**: `useState(initialValue)` only reads `initialValue` on the component's first mount, ever - passing a new `initialTotalUsers` prop on a second "Generate Design" click wouldn't reset the field, because React would just re-render the *same* instance with its already-initialized state.
+- **Takeaway**: When a component's internal state should reset in response to a prop changing, the fix is usually a `key`, not more `useEffect` logic to sync props into state. This is a common gotcha specific to how React decides "is this the same component or a new one."
+
+### Verifying math independently of the UI
+- **What**: Before wiring the formulas into a component, ran the calculation as a standalone script against hand-computed expected values (2,000,000 DAU, 100,000,000 daily requests, ~1,157 avg QPS, ~5,787 peak QPS for the 10M-user example) and asserted equality.
+- **Why here**: A UI screenshot only proves numbers *appeared* - it doesn't prove they're *correct*. Checking the pure function's output against independently hand-calculated values is a stronger form of verification, and it's exactly why keeping the math in a pure function (no React, no fetch) mattered - it can be tested completely separately from the browser.
+- **Takeaway**: For any calculation-heavy feature, verify the numbers before verifying the pixels. A pretty UI showing a wrong number is worse than an ugly one showing a right number.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
