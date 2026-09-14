@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RequirementsResult } from "@/components/requirements-result";
 import { ScaleEstimator } from "@/components/scale-estimator";
-import { ArchitectureResult } from "@/components/architecture-result";
+import { ArchitectureDiagram } from "@/components/architecture-diagram";
 import { extractApproxUserCount } from "@/lib/scale-estimator";
 import { planArchitecture } from "@/lib/architecture-planner";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
@@ -122,7 +122,7 @@ export function DesignInputForm() {
           {architecture && (
             <div>
               <h2 className="mb-3 text-sm font-medium">Generated Architecture</h2>
-              <ArchitectureResult architecture={architecture} />
+              <ArchitectureDiagram architecture={architecture} />
             </div>
           )}
         </div>
