@@ -173,6 +173,27 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 6.5 — Switching AI Providers (Anthropic -> Gemini)
+
+### Neither Anthropic nor OpenAI has an ongoing free API tier
+- **What**: Both are pay-per-token, sometimes with a limited trial credit for new accounts. Google's Gemini API (via Google AI Studio) is the provider that offers a genuinely free, ongoing tier with rate limits instead of a credit that runs out.
+- **Why here**: Wanting a free option for a portfolio project is reasonable - just worth knowing "free" and "has a free trial credit" aren't the same claim, and worth checking a provider's actual pricing page rather than assuming based on which one is more talked-about.
+- **Takeaway**: When cost is a real constraint, verify the actual billing model before choosing a provider, not just its reputation.
+
+### Verifying unfamiliar API documentation instead of trusting the first result
+- **What**: Fetched Google's structured-output docs page for the Gemini SDK and got back a plausible-looking but fabricated API shape (`client.interactions.create()`, model name `gemini-3.8-flash`) - it read confidently and consistently, but didn't match the SDK's own GitHub README, which clearly showed `ai.models.generateContent()`.
+- **Why it happened**: The doc-fetching tool renders the page through a summarizing model, and that page apparently couldn't be rendered cleanly - rather than reporting failure, the summarizer produced a fluent, wrong answer. Nothing about the output *looked* uncertain.
+- **How it was caught**: Cross-checked against a second, independent source (the SDK's own GitHub repository) before writing any code. The mismatch was immediately obvious - real SDKs don't casually rename their core method between one doc page and their own README.
+- **Takeaway**: Confident, detailed, fluent output is not the same as correct output - this applies to AI-generated documentation lookups exactly as much as it applies to the app we're building (this is the entire premise of Phase 6's "validate AI output" lesson, just experienced firsthand as the one relying on an AI tool rather than the one building one). When a claim is checkable, check it before it becomes code - a second independent source with a track record (the project's own GitHub repo, in this case) is worth more than how confident the first answer sounded.
+- **Follow-up verification**: After the mismatch, fetched three more targeted, narrow queries against the actual GitHub source (a directory listing, a real sample file, a constants file) rather than one broad summarized question - each one was checkable against the others and all agreed, which is what made the final API shape (`responseMimeType`/`responseSchema` fields, a `Type` enum for the schema, `response.text` for output) trustworthy enough to write into real code.
+
+### Keeping the provider swap contained
+- **What**: Swapping Anthropic for Gemini touched exactly three files with real logic changes: `analyze-with-ai.ts` (the actual API call), `route.ts` (one line - the env var name checked), and the UI label. Everything else - the Zod schema, the rule-based fallback, the API route's error handling shape - stayed untouched.
+- **Why it was this contained**: This is the payoff of the Phase 6 architecture - `analyzeWithAI()` was already isolated behind a single function with a fixed input/output contract (`string in, AnalyzedRequirements out, throws on failure`). The caller (`route.ts`) never knew or cared which provider was behind that function.
+- **Takeaway**: Isolating "the AI call" behind one function with a stable contract is what makes a provider swap a contained, mechanical change instead of a rewrite - this is the same reasoning as keeping business logic separate from I/O (Phase 3-4), applied one layer up.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
