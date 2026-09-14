@@ -253,6 +253,25 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 9 — Database Schema Generator
+
+### Normalization: storing facts once, deriving the rest
+- **What**: `likes` is a table of individual rows (`user_id`, `post_id`), not a `likes_count` column on `posts`. The count is a `COUNT(*)` query away.
+- **Why here**: A counter column can drift from reality (a bug double-increments it, a delete forgets to decrement it) and can't answer "did *this* user like *this* post" without separate tracking anyway. Storing the fact once, in its own table, means the count is always derivable and correct, and the "who" question is answered for free.
+- **Takeaway**: The general principle - store each fact in exactly one place, compute everything else - is what "normalization" actually means underneath the textbook term. A denormalized counter is a cache of a fact, and like any cache it can go stale.
+
+### Composite primary keys as a constraint, not just an ID choice
+- **What**: `likes` and `follows` use a composite primary key (`user_id` + `post_id`, or `follower_id` + `followee_id`) instead of a separate auto-generated `id` column.
+- **Why here**: This isn't just "fewer columns" - the composite key makes "duplicate like" a constraint violation at the database level. The schema itself enforces "one like per user per post," rather than relying on application code to check-then-insert (which has its own race-condition risk under concurrent requests).
+- **Takeaway**: A primary key choice can encode a business rule directly into the data model - worth considering composite keys specifically for join/junction tables representing "at most one of this relationship," not just as a way to save a column.
+
+### A second instance of the same "known limitation" pattern from Phase 3-4
+- **What**: If a description mentions "comment" without any post-related keyword, the generator would produce a `comments` table with a foreign key to a `posts` table that doesn't exist in the output.
+- **Why it's acceptable for now**: This mirrors the Phase 3-4 "photos and videos" splitting gap - a rule-based v1 has known, explainable edges. In practice this specific case is unlikely (comments almost always co-occur with posts/content in real descriptions), and documenting the limitation is more valuable right now than adding defensive code for an edge case that may never actually trigger.
+- **Takeaway**: Recognizing and naming a limitation explicitly (rather than silently shipping it or over-engineering around a rare case) is itself the right level of rigor for a rule-based first pass - the same judgment call made twice now in this project, which suggests it's a genuine pattern worth having, not a one-off shortcut.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
