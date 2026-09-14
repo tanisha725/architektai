@@ -84,6 +84,11 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 - **How it was caught**: Ran the dev server, drove it with headless Chromium (Playwright), and took a screenshot — the wrong font was visible immediately, even though every automated check (build, lint, TypeScript) was green.
 - **Takeaway**: Type checks and linters verify code *compiles*, not that it *looks or behaves right*. This is exactly the "test the golden path in a real browser" principle — a passing build is necessary but not sufficient evidence a UI change works.
 
+### Checkpoint — uncontrolled vs. controlled inputs, precisely
+- **What**: Removing `value={description}` from the textarea (while keeping `onChange`) doesn't break typing — the DOM handles that natively either way. What actually breaks: state updates that originate *outside* user typing (like the example-prompt buttons calling `setDescription(example)`) would no longer be reflected on screen, since nothing binds the textarea's displayed value back to React state anymore.
+- **Why it matters**: The bug from an uncontrolled input isn't always "nothing works" — it can be "the thing that programmatically sets the value stops working while direct typing looks fine," which is a sneakier failure mode to debug.
+- **Takeaway**: "Controlled" specifically means state is the source of truth in *both directions* — reads (what's displayed) and writes (what typing produces). Losing the read direction breaks anything that sets the value programmatically, not the input itself.
+
 ---
 
 ## How to use this file
