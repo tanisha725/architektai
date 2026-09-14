@@ -24,9 +24,35 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
-## Phase 1 — (not started yet)
+## Phase 1 — Next.js + TypeScript Setup
 
-*(To be filled in once we scaffold the project.)*
+### Next.js vs. plain React
+- **What**: Next.js bundles a UI layer (React) and a server layer (API routes under `app/api/.../route.ts`) into one project.
+- **Why here**: Plain React (e.g. via Vite) only gives you the UI — you'd need a separate backend project/server for anything server-side. Next.js is the actual reason we don't need a separate backend service for this project.
+- **Takeaway**: "One deployable app" isn't a simplification we imposed on top of the stack — it's a property Next.js gives us by design.
+
+### The App Router
+- **What**: Next.js's current routing system — folders under `src/app/` map directly to URL paths, and a folder can hold `page.tsx` (UI for that route) and `route.ts` (an API endpoint at that route) side by side.
+- **Why here**: This is what lets `src/app/api/analyze/route.ts` (Phase 4) sit right next to `src/app/design/[id]/page.tsx` (the workspace UI) in a way that's easy to navigate.
+- **Takeaway**: File location *is* the routing config — no separate router file to maintain.
+
+### Why TypeScript here specifically
+- **What**: Static types checked at compile time instead of discovering shape mismatches at runtime.
+- **Why here**: We're about to define strict schemas for AI output (`SystemDesign`, etc. — Phase 6). TypeScript is what makes "the AI response must match this shape" enforceable and autocomplete-able throughout the codebase, not just at the validation boundary.
+- **Takeaway**: TypeScript isn't a style preference in this project — later phases assume it exists.
+
+### Tailwind CSS
+- **What**: Utility-first CSS — compose styles with classes in markup (`className="flex items-center gap-2"`) instead of writing separate `.css` files with custom class names.
+- **Why here**: Avoids context-switching between markup and stylesheet files, and avoids accumulating dead/unused CSS as the UI evolves across many phases.
+- **Takeaway**: Trades "readable class names" for "co-located, impossible-to-orphan styles."
+
+### shadcn/ui (concept only — not installed yet)
+- **What**: Unlike a typical component library installed as an opaque `node_modules` dependency, shadcn/ui's CLI copies component source directly into `src/components/ui/` — you own and can edit the code.
+- **Why here**: We'll need to customize components for the diagram nodes and explanation panels (Phase 8–9) in ways a black-box library would fight us on.
+- **Takeaway**: "Library" here means "starting point you edit," not "dependency you configure around."
+
+### Practical scaffolding note
+- Used `create-next-app` with `--typescript --tailwind --app --src-dir --eslint` flags to get everything pre-wired instead of configuring each tool by hand — confirmed working with a production build (`npm run build`) and a dev server request, not just "it installed."
 
 ---
 
