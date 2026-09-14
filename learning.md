@@ -194,6 +194,30 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 7 — Architecture Generator + Technology Knowledge Base
+
+### A knowledge base as a guardrail on AI freedom
+- **What**: `technologies.ts` hand-defines ~11 real technologies (strengths, weaknesses, use cases, scaling/consistency/latency/cost) as a fixed dataset. The planner selects and justifies *from* this set rather than generating technology facts freely.
+- **Why here**: This is what the original project brief meant by "the AI should NOT have complete freedom to invent architectures" - constraining the vocabulary before any reasoning (rule-based now, AI-based later) happens over it. A wrong fact about PostgreSQL in a hand-curated 11-entry table is easy to catch and fix; a wrong fact buried in a free-form LLM explanation is not.
+- **Takeaway**: Constraining what an AI (or a rule-based stand-in for one) can say is often more valuable than making it smarter - a small, correct, curated dataset beats a large, ungrounded one for this kind of task.
+
+### Tracing every decision back to its trigger
+- **What**: Every component in `planArchitecture()` is added behind an explicit, named boolean (`hasMedia`, `needsLowLatency`, `isLargeScale`, ...) derived directly from the requirements/scale data - never a hardcoded "always include Redis."
+- **Why here**: This is the actual system-design interview skill - not knowing that Redis exists, but being able to say *why* it belongs in *this* design and not another one. Building the planner this way forced every component to have a traceable justification, the same discipline the finished product is meant to teach its users.
+- **Takeaway**: When a feature's whole purpose is "explain the reasoning," the code implementing it should make that reasoning inspectable in its own structure, not just in generated text output.
+
+### Catching my own fragile code before it shipped
+- **What**: A first draft of the client -> gateway -> load-balancer -> backend wiring mutated connection objects by array index (`connections[connections.length-1].from = ...`) to conditionally splice in the load balancer. It happened to compute the right answer, but was hard to verify just by reading it - correctness depended on exact index arithmetic staying in sync with which components were conditionally present.
+- **Why it mattered**: Rewrote it as: build an explicit ordered list of "front door" component ids (`frontChain`), conditionally push onto it, then connect each consecutive pair in one loop. Same output, but now correct by inspection - no index tracing needed to trust it.
+- **Takeaway**: "It produces the right output" and "it's obviously correct by reading it" are different bars. Array-index mutation tricks are a common way to satisfy the first while failing the second - worth noticing that gap and refactoring toward explicit, orderable data (a list you build and then connect) instead of positional mutation, especially in code with conditional branches.
+
+### Lifting state up through a callback, not merging components
+- **What**: `ScaleEstimator` reports its live-computed estimates to `DesignInputForm` via an `onEstimatesChange` callback (fired in a `useEffect`), rather than `DesignInputForm` reimplementing the scale calculation or `ScaleEstimator` reaching down into an architecture-planning concern it shouldn't know about.
+- **Why here**: This kept `ScaleEstimator` unaware that architecture generation exists at all - it just reports what it computed, and the parent decides what to do with that. Adding a new consumer of scale estimates later (e.g. a future "cost estimator") would mean another prop on the parent, not a change to `ScaleEstimator` itself.
+- **Takeaway**: When a child component computes something a sibling or parent needs, the callback-reports-up pattern keeps components single-purpose - the alternative (merging two features into one component, or duplicating the calculation) trades a small amount of prop-wiring for real coupling.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
