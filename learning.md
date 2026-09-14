@@ -234,6 +234,25 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 8 — Interactive Architecture Diagram (React Flow)
+
+### A canvas library needs explicit positions - it doesn't lay anything out for you
+- **What**: React Flow renders exactly the nodes/edges you give it, each node at the `{x, y}` you specify. There's no automatic "arrange these nicely" behavior built in.
+- **Why here**: `architecture-layout.ts` does a breadth-first search from the client node over the connection graph, assigning each component a "level" (hop-distance from client). Same-level components sit side by side; levels stack vertically. This means the diagram's layout is *derived from the data's shape*, not hand-positioned - it automatically reflows correctly whether an architecture has 3 components or 9, without ever touching layout code again.
+- **Takeaway**: Whenever a UI needs to visually reflect a graph/tree structure that changes based on data, compute layout from that structure (BFS/DFS levels, in this case) rather than hardcoding positions - hardcoded positions only work for exactly one dataset.
+
+### Reusing a component across two different presentation shells
+- **What**: `ComponentDetail` (what/why/alternatives/trade-offs/failure/scaling) was extracted out of the old button-list `architecture-result.tsx` into its own file, so the new `architecture-diagram.tsx` could reuse it without duplicating that JSX.
+- **Why here**: The *data* being displayed (an `ArchitectureComponent`) didn't change between Phase 7 and Phase 8 - only how you *select* one changed (click a button vs. click a diagram node). Separating "how you pick a component" from "how a component's details are displayed" meant Phase 8 only had to write new selection logic, not rebuild the detail view from scratch.
+- **Takeaway**: When a UI's presentation shell changes but the underlying data and its detail view don't, extracting the detail view first (rather than copy-pasting it into the new shell) keeps both in sync automatically if the data shape ever changes again.
+
+### Where global CSS is allowed to live in the App Router
+- **What**: `@xyflow/react/dist/style.css` (a global stylesheet the library ships) had to be imported in `layout.tsx`, the root layout - importing it directly inside `architecture-diagram.tsx` (a nested Client Component) is not allowed.
+- **Why here**: Next.js restricts *global* CSS imports to layout/page files specifically so that style loading order stays predictable across the whole app - if any nested component could import arbitrary global CSS, two components importing conflicting global styles could produce order-dependent, hard-to-debug rendering differences depending on which one happened to render first.
+- **Takeaway**: A library's required global stylesheet goes in the root layout, not next to the component that happens to use it - this is a framework-level rule, not a style preference.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
