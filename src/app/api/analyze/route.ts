@@ -7,7 +7,7 @@ async function getRequirements(description: string): Promise<{
   requirements: AnalyzedRequirements;
   source: "ai" | "rule-based";
 }> {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.GEMINI_API_KEY) {
     return { requirements: analyzeRequirements(description), source: "rule-based" };
   }
 

@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { GoogleGenAI, Type } from "@google/genai";
 import { AnalyzedRequirementsSchema, type AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 
 const SYSTEM_PROMPT = `You are a system design assistant that turns a product description into structured requirements.
@@ -11,22 +10,46 @@ Rules:
 - Be concise. Do not invent requirements unrelated to the description.
 - Every item must be tagged with the correct "source" - this distinction is critical, never guess it loosely.`;
 
-export async function analyzeWithAI(description: string): Promise<AnalyzedRequirements> {
-  const client = new Anthropic();
+// Gemini's structured output uses a JSON-schema-like object with a `Type` enum,
+// not a Zod schema directly - this mirrors AnalyzedRequirementsSchema by hand.
+const requirementItemSchema = {
+  type: Type.OBJECT,
+  properties: {
+    text: { type: Type.STRING },
+    source: { type: Type.STRING, enum: ["user-stated", "assumed"] },
+  },
+  required: ["text", "source"],
+};
 
-  const response = await client.messages.parse({
-    model: "claude-opus-5",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: description }],
-    output_config: {
-      format: zodOutputFormat(AnalyzedRequirementsSchema),
+const responseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    functional: { type: Type.ARRAY, items: requirementItemSchema },
+    nonFunctional: { type: Type.ARRAY, items: requirementItemSchema },
+    assumptions: { type: Type.ARRAY, items: requirementItemSchema },
+  },
+  required: ["functional", "nonFunctional", "assumptions"],
+};
+
+export async function analyzeWithAI(description: string): Promise<AnalyzedRequirements> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: description,
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      responseMimeType: "application/json",
+      responseSchema,
     },
   });
 
-  if (!response.parsed_output) {
-    throw new Error("AI response did not match the expected schema.");
+  if (!response.text) {
+    throw new Error("Gemini returned an empty response.");
   }
 
-  return response.parsed_output;
+  // Gemini's schema constrains the JSON shape, but we still validate with Zod -
+  // the schema above can't express our exact source-field business rules the
+  // way a hand-checked parse can, and it's cheap insurance against drift.
+  return AnalyzedRequirementsSchema.parse(JSON.parse(response.text));
 }

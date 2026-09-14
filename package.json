@@ -9,8 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.125.0",
     "@base-ui/react": "^1.8.0",
+    "@google/genai": "^2.22.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.3.0",
     "lucide-react": "^1.46.0",

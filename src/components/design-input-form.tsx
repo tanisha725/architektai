@@ -97,7 +97,7 @@ export function DesignInputForm() {
         <div className="mt-4 flex flex-col gap-8">
           <p className="text-xs text-muted-foreground">
             Analyzed by:{" "}
-            {analysisSource === "ai" ? "Claude (AI)" : "rule-based analyzer (no API key configured)"}
+            {analysisSource === "ai" ? "Gemini (AI)" : "rule-based analyzer (no API key configured)"}
           </p>
           <RequirementsResult requirements={requirements} />
           <ScaleEstimator key={approxUserCount ?? "default"} initialTotalUsers={approxUserCount} />
