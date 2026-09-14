@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { estimateScale } from "@/lib/scale-estimator";
-import { DEFAULT_SCALE_INPUTS, type ScaleInputs } from "@/types/scale";
+import { DEFAULT_SCALE_INPUTS, type ScaleEstimates, type ScaleInputs } from "@/types/scale";
 
 const INPUT_FIELDS: {
   key: keyof ScaleInputs;
@@ -24,13 +24,26 @@ function formatNumber(value: number, maxFractionDigits = 0): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: maxFractionDigits });
 }
 
-export function ScaleEstimator({ initialTotalUsers }: { initialTotalUsers?: number }) {
+export function ScaleEstimator({
+  initialTotalUsers,
+  onEstimatesChange,
+}: {
+  initialTotalUsers?: number;
+  onEstimatesChange?: (estimates: ScaleEstimates) => void;
+}) {
   const [inputs, setInputs] = useState<ScaleInputs>({
     ...DEFAULT_SCALE_INPUTS,
     totalUsers: initialTotalUsers ?? DEFAULT_SCALE_INPUTS.totalUsers,
   });
 
   const estimates = useMemo(() => estimateScale(inputs), [inputs]);
+
+  // Report estimates up whenever they change, so a parent (e.g. the architecture
+  // planner) can react to them without owning this component's input state.
+  useEffect(() => {
+    onEstimatesChange?.(estimates);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estimates]);
 
   function updateField(key: keyof ScaleInputs, rawValue: string) {
     const value = Number(rawValue);

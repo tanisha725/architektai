@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RequirementsResult } from "@/components/requirements-result";
 import { ScaleEstimator } from "@/components/scale-estimator";
+import { ArchitectureResult } from "@/components/architecture-result";
 import { extractApproxUserCount } from "@/lib/scale-estimator";
+import { planArchitecture } from "@/lib/architecture-planner";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
+import type { ScaleEstimates } from "@/types/scale";
 
 const EXAMPLE_PROMPTS = [
   "Design Instagram for 10 million users. Users can create accounts, upload photos and videos, follow other users, view a feed, like and comment on posts, receive notifications, and send messages.",
@@ -21,6 +24,16 @@ export function DesignInputForm() {
   const [requirements, setRequirements] = useState<AnalyzedRequirements | null>(null);
   const [analysisSource, setAnalysisSource] = useState<"ai" | "rule-based" | null>(null);
   const [approxUserCount, setApproxUserCount] = useState<number | undefined>(undefined);
+  const [scaleEstimates, setScaleEstimates] = useState<ScaleEstimates | null>(null);
+
+  const handleEstimatesChange = useCallback((estimates: ScaleEstimates) => {
+    setScaleEstimates(estimates);
+  }, []);
+
+  const architecture = useMemo(() => {
+    if (!requirements || !scaleEstimates) return null;
+    return planArchitecture(requirements, scaleEstimates);
+  }, [requirements, scaleEstimates]);
 
   function handleExampleClick(example: string) {
     setDescription(example);
@@ -36,6 +49,7 @@ export function DesignInputForm() {
     setError(null);
     setIsSubmitting(true);
     setRequirements(null);
+    setScaleEstimates(null);
 
     try {
       const response = await fetch("/api/analyze", {
@@ -100,7 +114,17 @@ export function DesignInputForm() {
             {analysisSource === "ai" ? "Gemini (AI)" : "rule-based analyzer (no API key configured)"}
           </p>
           <RequirementsResult requirements={requirements} />
-          <ScaleEstimator key={approxUserCount ?? "default"} initialTotalUsers={approxUserCount} />
+          <ScaleEstimator
+            key={approxUserCount ?? "default"}
+            initialTotalUsers={approxUserCount}
+            onEstimatesChange={handleEstimatesChange}
+          />
+          {architecture && (
+            <div>
+              <h2 className="mb-3 text-sm font-medium">Generated Architecture</h2>
+              <ArchitectureResult architecture={architecture} />
+            </div>
+          )}
         </div>
       )}
     </div>
