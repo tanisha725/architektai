@@ -8,6 +8,7 @@ import { extractApproxUserCount } from "@/lib/scale-estimator";
 import { planArchitecture } from "@/lib/architecture-planner";
 import { generateDatabaseSchema } from "@/lib/schema-generator";
 import { generateApiEndpoints } from "@/lib/api-generator";
+import { generateRoadmap } from "@/lib/roadmap-generator";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { ScaleEstimates } from "@/types/scale";
 
@@ -44,6 +45,11 @@ export function DesignInputForm() {
     if (!requirements || !databaseSchema) return null;
     return generateApiEndpoints(requirements, databaseSchema);
   }, [requirements, databaseSchema]);
+
+  const roadmap = useMemo(() => {
+    if (!architecture) return null;
+    return generateRoadmap(architecture);
+  }, [architecture]);
 
   function handleExampleClick(example: string) {
     setDescription(example);
@@ -127,6 +133,7 @@ export function DesignInputForm() {
           architecture={architecture}
           databaseSchema={databaseSchema}
           apiEndpoints={apiEndpoints}
+          roadmap={roadmap}
         />
       )}
     </div>

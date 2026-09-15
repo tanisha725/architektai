@@ -5,11 +5,13 @@ import { ScaleEstimator } from "@/components/scale-estimator";
 import { ArchitectureDiagram } from "@/components/architecture-diagram";
 import { DatabaseSchemaResult } from "@/components/database-schema-result";
 import { ApiResult } from "@/components/api-result";
+import { RoadmapResult } from "@/components/roadmap-result";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { ScaleEstimates } from "@/types/scale";
 import type { Architecture } from "@/types/architecture";
 import type { DatabaseSchema } from "@/types/database";
 import type { ApiEndpoint } from "@/types/api";
+import type { RoadmapPhase } from "@/types/roadmap";
 
 interface DesignWorkspaceProps {
   requirements: AnalyzedRequirements;
@@ -20,6 +22,7 @@ interface DesignWorkspaceProps {
   architecture: Architecture | null;
   databaseSchema: DatabaseSchema | null;
   apiEndpoints: ApiEndpoint[] | null;
+  roadmap: RoadmapPhase[] | null;
 }
 
 export function DesignWorkspace({
@@ -31,6 +34,7 @@ export function DesignWorkspace({
   architecture,
   databaseSchema,
   apiEndpoints,
+  roadmap,
 }: DesignWorkspaceProps) {
   return (
     <div className="mt-4 flex flex-col gap-4">
@@ -46,6 +50,7 @@ export function DesignWorkspace({
           <TabsTrigger value="architecture">Architecture</TabsTrigger>
           <TabsTrigger value="database">Database</TabsTrigger>
           <TabsTrigger value="api">API</TabsTrigger>
+          <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" keepMounted>
@@ -55,6 +60,7 @@ export function DesignWorkspace({
             architecture={architecture}
             databaseSchema={databaseSchema}
             apiEndpoints={apiEndpoints}
+            roadmap={roadmap}
           />
         </TabsContent>
 
@@ -85,6 +91,10 @@ export function DesignWorkspace({
         <TabsContent value="api" keepMounted>
           {apiEndpoints ? <ApiResult endpoints={apiEndpoints} /> : <EmptyTabState />}
         </TabsContent>
+
+        <TabsContent value="roadmap" keepMounted>
+          {roadmap ? <RoadmapResult phases={roadmap} /> : <EmptyTabState />}
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -104,12 +114,14 @@ function OverviewTab({
   architecture,
   databaseSchema,
   apiEndpoints,
+  roadmap,
 }: {
   requirements: AnalyzedRequirements;
   scaleEstimates: ScaleEstimates | null;
   architecture: Architecture | null;
   databaseSchema: DatabaseSchema | null;
   apiEndpoints: ApiEndpoint[] | null;
+  roadmap: RoadmapPhase[] | null;
 }) {
   const stats = [
     { label: "Functional requirements", value: requirements.functional.length },
@@ -118,6 +130,7 @@ function OverviewTab({
     { label: "Architecture components", value: architecture?.components.length ?? "—" },
     { label: "Database tables", value: databaseSchema?.tables.length ?? "—" },
     { label: "API endpoints", value: apiEndpoints?.length ?? "—" },
+    { label: "Roadmap phases", value: roadmap?.length ?? "—" },
   ];
 
   return (
