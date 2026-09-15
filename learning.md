@@ -286,6 +286,21 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 10.5 — Tabbed Workspace (UI restructure)
+
+### Saying no to scope that doesn't fit, with a concrete reason
+- **What**: The user asked about adding 3D visualization. Rather than building it, the response was a recommendation against it (no clear problem it solves that the 2D diagram doesn't) plus a concrete alternative (fix the actual UI issue - a 6000px scroll) that better served the same underlying "make this more impressive" intent.
+- **Why here**: This mirrors the project's own stated principle from Phase 0 - don't add a technology without a specific reason. Redirecting toward evidence of a real problem (the screenshot height) turned a vague ask into a well-justified, scoped piece of work instead of an unjustified dependency.
+- **Takeaway**: When a request risks violating a project's own stated principles, it's worth naming the tension directly and proposing the alternative that still serves the underlying goal - not just complying, and not just refusing.
+
+### `keepMounted` and the danger of conditionally-rendered state producers
+- **What**: Radix/Base-UI-style tab panels unmount inactive content by default (`keepMounted` defaults false). `ScaleEstimator` reports its computed estimates to the parent via a `useEffect` on mount/change - but if its tab panel isn't mounted, that effect never runs, so `scaleEstimates` stays `null`, and everything derived from it (architecture, database schema's endpoint list wasn't affected, but architecture and the Overview stats were) silently stayed empty until the user happened to click the Scale tab.
+- **Why it happened**: The bug wasn't in the derived-data logic at all (`planArchitecture`, `generateApiEndpoints` were all still correct) - it was a side effect of *where* a stateful child component was mounted, which changed silently when the surrounding layout was refactored into tabs.
+- **How it was caught**: Verified with a headless browser script that deliberately generated a design and immediately checked the Overview tab's stat cards *without* visiting the Scale tab first - exactly the path a real user would take by default (Overview is the default tab). A screenshot alone wouldn't have caught this as reliably as scripting the exact interaction sequence a user would actually perform.
+- **Takeaway**: When a component that computes shared state gets moved into a conditionally-rendered container (a tab, an accordion, a modal), check whether "conditionally rendered" also means "conditionally mounted" - and whether anything else in the app was relying on it always being mounted. This is a new instance of the same underlying lesson as the Phase 6.5 stale-dev-server bug: behavior silently depending on something being "already running" that a refactor can invalidate.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
