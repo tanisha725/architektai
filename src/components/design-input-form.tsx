@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DesignWorkspace } from "@/components/design-workspace";
@@ -12,7 +13,7 @@ import { generateRoadmap } from "@/lib/roadmap-generator";
 import { buildDesignSummary } from "@/lib/design-summary";
 import { generateArchitectureEvolution } from "@/lib/architecture-evolution";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
-import type { ScaleEstimates } from "@/types/scale";
+import { DEFAULT_SCALE_INPUTS, type ScaleEstimates } from "@/types/scale";
 
 const EXAMPLE_PROMPTS = [
   "Design Instagram for 10 million users. Users can create accounts, upload photos and videos, follow other users, view a feed, like and comment on posts, receive notifications, and send messages.",
@@ -28,6 +29,9 @@ export function DesignInputForm() {
   const [analysisSource, setAnalysisSource] = useState<"ai" | "rule-based" | null>(null);
   const [approxUserCount, setApproxUserCount] = useState<number | undefined>(undefined);
   const [scaleEstimates, setScaleEstimates] = useState<ScaleEstimates | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedDesignId, setSavedDesignId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleEstimatesChange = useCallback((estimates: ScaleEstimates) => {
     setScaleEstimates(estimates);
@@ -63,6 +67,38 @@ export function DesignInputForm() {
     return generateArchitectureEvolution(requirements);
   }, [requirements]);
 
+  async function handleSave() {
+    if (!requirements || !architecture || !databaseSchema || !apiEndpoints || !roadmap) return;
+
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const response = await fetch("/api/designs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description,
+          analysisSource,
+          // Reconstructs the scale assumptions used, rather than tracking live
+          // edits made in the Scale tab - a known simplification (see learning.md).
+          scaleInputs: { ...DEFAULT_SCALE_INPUTS, totalUsers: approxUserCount ?? DEFAULT_SCALE_INPUTS.totalUsers },
+          requirements,
+          architecture,
+          databaseSchema,
+          apiEndpoints,
+          roadmap,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error ?? "Failed to save design.");
+      setSavedDesignId(data.id);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Unexpected error.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   function handleExampleClick(example: string) {
     setDescription(example);
     setError(null);
@@ -78,6 +114,8 @@ export function DesignInputForm() {
     setIsSubmitting(true);
     setRequirements(null);
     setScaleEstimates(null);
+    setSavedDesignId(null);
+    setSaveError(null);
 
     try {
       const response = await fetch("/api/analyze", {
@@ -136,19 +174,37 @@ export function DesignInputForm() {
       </Button>
 
       {requirements && (
-        <DesignWorkspace
-          requirements={requirements}
-          analysisSource={analysisSource}
-          approxUserCount={approxUserCount}
-          onEstimatesChange={handleEstimatesChange}
-          scaleEstimates={scaleEstimates}
-          architecture={architecture}
-          databaseSchema={databaseSchema}
-          apiEndpoints={apiEndpoints}
-          roadmap={roadmap}
-          designSummary={designSummary}
-          evolutionStages={evolutionStages}
-        />
+        <>
+          <DesignWorkspace
+            requirements={requirements}
+            analysisSource={analysisSource}
+            approxUserCount={approxUserCount}
+            onEstimatesChange={handleEstimatesChange}
+            scaleEstimates={scaleEstimates}
+            architecture={architecture}
+            databaseSchema={databaseSchema}
+            apiEndpoints={apiEndpoints}
+            roadmap={roadmap}
+            designSummary={designSummary}
+            evolutionStages={evolutionStages}
+          />
+
+          <div className="mt-4 flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleSave}
+              disabled={isSaving || !architecture || !databaseSchema}
+            >
+              {isSaving ? "Saving..." : "Save Design"}
+            </Button>
+            {savedDesignId && (
+              <Link href={`/design/${savedDesignId}`} className="text-sm text-primary underline">
+                View saved design →
+              </Link>
+            )}
+            {saveError && <p className="text-sm text-destructive">{saveError}</p>}
+          </div>
+        </>
       )}
     </div>
   );

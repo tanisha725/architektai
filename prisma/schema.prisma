@@ -1,0 +1,31 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// A saved design stores the full generated output as JSON - these are
+// display artifacts we always fetch and render as a whole, not data we
+// query piece-by-piece, so normalizing them into separate tables would add
+// complexity without a real benefit. See learning.md for the reasoning.
+model Design {
+  id String @id @default(cuid())
+
+  description String
+  analysisSource String
+
+  scaleInputs Json
+  requirements Json
+  architecture Json
+  databaseSchema Json
+  apiEndpoints Json
+  roadmap Json
+
+  createdAt DateTime @default(now())
+}
