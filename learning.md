@@ -382,6 +382,30 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase A — Domain-Aware AI Architecture Generation
+
+### Finding the actual root cause before touching code
+- **What**: A large improvement request ("designs are too generic") could have been attacked from many angles - more rule-based keyword triggers, a bigger knowledge base, better prompts elsewhere. The actual audit found one precise root cause: architecture generation was the *only* major generator in the whole pipeline that never got the AI upgrade every other generator (requirements) already had - it was still 100% six-regex rule matching from Phase 7.
+- **Why this mattered**: Naming the exact root cause turned an open-ended, 30-section improvement request into one well-scoped, highest-leverage change (Phase A) instead of many scattered small tweaks that wouldn't have fixed the actual complaint.
+- **Takeaway**: When a request lists many possible symptoms, look for the one structural gap that explains most of them, rather than patching each symptom independently - an audit that names a precise cause is worth more than a long list of possible improvements.
+
+### Separating "facts" from "analysis" as a schema-level design choice
+- **What**: `toComponent()` deliberately sources different fields from different places for infrastructure components: `purpose`, `alternatives`, and `tradeoffs` always come from the verified knowledge base (never the AI's text, even though the AI's schema technically includes a `purpose` field it ends up not using for these); `reason`, `scalingStrategy`, and `failureBehavior` always come from the AI, since those are inherently product-specific analysis, not universal facts about a technology.
+- **Why here**: This directly implements the "distinguish verified fact from recommendation" requirement without needing a separate labeling system in the UI - the distinction is architectural (which field, which source), not cosmetic (a badge saying "verified" vs "AI-generated" next to arbitrary text).
+- **Takeaway**: When a system needs to keep two kinds of information distinct (fact vs. inference, verified vs. assumed), encoding the distinction in *where data comes from* is more robust than encoding it in a label that has to be manually kept accurate - a label can drift from the truth; a hard-coded data source cannot.
+
+### A Zod enum as a hallucination guardrail, verified directly
+- **What**: `technologyId` in the AI's response schema is a Zod `.enum()` built dynamically from `TECHNOLOGIES.map(t => t.id)` - not a free string. Tested directly (no live API call needed) that a fabricated technology id throws a `ZodError` rather than silently passing through.
+- **Why this is stronger than a prompt instruction**: The system prompt also tells the model "you cannot invent a technology outside this list" - but a schema-level constraint doesn't rely on the model reliably following that instruction. If it doesn't, the enum catches it and the existing fallback-on-validation-failure path (already built for the requirement analyzer) handles it automatically, no new logic needed.
+- **Takeaway**: Prefer constraining what a model's output *can structurally be* over instructing what it *should* produce, whenever the schema can express the constraint - instructions are a request, a schema enum is a guarantee.
+
+### Verifying without the resource you'd normally verify with
+- **What**: Live end-to-end testing against the actual Gemini API was blocked mid-session by hitting the free tier's daily quota (20 requests/day) - discovered from a real `429 RESOURCE_EXHAUSTED` error, not assumed. Rather than stopping verification entirely, fell back to two things that don't consume quota: (1) hand-crafting a realistic AI-response-shaped object and running it through the actual Zod schema and `toArchitecture()` conversion function, and (2) hand-crafting a deliberately invalid response to confirm the hallucination guardrail actually rejects it.
+- **Why this was still real verification, not a compromise**: The code paths being tested (schema validation, KB-grounding logic, fallback triggering) are exactly the same code that runs on a live response - only the *source* of the input JSON changed (hand-written vs. model-generated). What couldn't be verified this way is prompt quality itself (does the model actually reason domain-first) - that remains genuinely untested until the quota resets.
+- **Takeaway**: When the resource needed for full verification is unavailable, look for what part of the system can still be tested with a substitute input, and be explicit about exactly which part remains unverified - "verified the code, not yet the model's actual behavior" is an honest, precise status, not a workaround pretending to be complete.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
