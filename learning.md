@@ -272,6 +272,20 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 10 — API Design Generator
+
+### A three-layer traceable chain: requirements -> schema -> API
+- **What**: `generateApiEndpoints()` doesn't re-read the requirements text to decide which tables exist - it loops the *already-generated* `schema.tables` from Phase 9, and maps each table to its CRUD endpoints via a lookup catalog (`TABLE_ENDPOINTS`), the same shape as the schema generator's own `ENTITY_TEMPLATES`.
+- **Why here**: This means API design is derived from database design, which was derived from requirements - one consistent chain, not three independent guesses at the same underlying facts. If a table wouldn't exist (e.g. no "follow" keyword), no follow-related endpoints get generated either, automatically, with no extra logic needed to keep them in sync.
+- **Takeaway**: When two generated artifacts describe the same underlying thing from different angles (a database table and the API that operates on it), deriving the second directly from the first's *output* - not from the same raw input a second time - is what guarantees they never drift apart.
+
+### Recognizing a UI problem from its own evidence
+- **What**: A full-page screenshot of the generated design came back 6182 pixels tall - six major sections (requirements, scale, architecture, database, API) all stacked in one continuous scroll.
+- **Why it mattered**: This was the concrete evidence that turned a vague "the UI could be nicer" request into a specific, justified problem: too many sections in one flat scroll, not a lack of decoration. The fix that actually addresses this (tabs/sections, from the original plan's "Design Workspace" concept) is a usability fix, not a cosmetic one - which is also why it doesn't conflict with the project's "don't add complexity without justification" principle the way an unrelated feature (e.g. 3D visualization) would have.
+- **Takeaway**: When asked for vague improvement ("make the UI better"), look for concrete, measurable evidence of an actual problem (a screenshot's dimensions, in this case) before deciding what "better" means - it turns a subjective request into an objective one.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
