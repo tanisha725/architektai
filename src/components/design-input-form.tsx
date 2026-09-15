@@ -9,6 +9,7 @@ import { planArchitecture } from "@/lib/architecture-planner";
 import { generateDatabaseSchema } from "@/lib/schema-generator";
 import { generateApiEndpoints } from "@/lib/api-generator";
 import { generateRoadmap } from "@/lib/roadmap-generator";
+import { buildDesignSummary } from "@/lib/design-summary";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { ScaleEstimates } from "@/types/scale";
 
@@ -50,6 +51,11 @@ export function DesignInputForm() {
     if (!architecture) return null;
     return generateRoadmap(architecture);
   }, [architecture]);
+
+  const designSummary = useMemo(() => {
+    if (!requirements || !architecture || !databaseSchema || !scaleEstimates) return null;
+    return buildDesignSummary(requirements, architecture, databaseSchema, scaleEstimates);
+  }, [requirements, architecture, databaseSchema, scaleEstimates]);
 
   function handleExampleClick(example: string) {
     setDescription(example);
@@ -134,6 +140,7 @@ export function DesignInputForm() {
           databaseSchema={databaseSchema}
           apiEndpoints={apiEndpoints}
           roadmap={roadmap}
+          designSummary={designSummary}
         />
       )}
     </div>

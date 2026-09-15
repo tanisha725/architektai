@@ -6,6 +6,7 @@ import { ArchitectureDiagram } from "@/components/architecture-diagram";
 import { DatabaseSchemaResult } from "@/components/database-schema-result";
 import { ApiResult } from "@/components/api-result";
 import { RoadmapResult } from "@/components/roadmap-result";
+import { InterviewTab } from "@/components/interview-tab";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { ScaleEstimates } from "@/types/scale";
 import type { Architecture } from "@/types/architecture";
@@ -23,6 +24,7 @@ interface DesignWorkspaceProps {
   databaseSchema: DatabaseSchema | null;
   apiEndpoints: ApiEndpoint[] | null;
   roadmap: RoadmapPhase[] | null;
+  designSummary: string | null;
 }
 
 export function DesignWorkspace({
@@ -35,6 +37,7 @@ export function DesignWorkspace({
   databaseSchema,
   apiEndpoints,
   roadmap,
+  designSummary,
 }: DesignWorkspaceProps) {
   return (
     <div className="mt-4 flex flex-col gap-4">
@@ -51,6 +54,7 @@ export function DesignWorkspace({
           <TabsTrigger value="database">Database</TabsTrigger>
           <TabsTrigger value="api">API</TabsTrigger>
           <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
+          <TabsTrigger value="interview">Interview</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" keepMounted>
@@ -94,6 +98,10 @@ export function DesignWorkspace({
 
         <TabsContent value="roadmap" keepMounted>
           {roadmap ? <RoadmapResult phases={roadmap} /> : <EmptyTabState />}
+        </TabsContent>
+
+        <TabsContent value="interview" keepMounted>
+          {designSummary ? <InterviewTab designSummary={designSummary} /> : <EmptyTabState />}
         </TabsContent>
       </Tabs>
     </div>
