@@ -3,11 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { RequirementsResult } from "@/components/requirements-result";
-import { ScaleEstimator } from "@/components/scale-estimator";
-import { ArchitectureDiagram } from "@/components/architecture-diagram";
-import { DatabaseSchemaResult } from "@/components/database-schema-result";
-import { ApiResult } from "@/components/api-result";
+import { DesignWorkspace } from "@/components/design-workspace";
 import { extractApproxUserCount } from "@/lib/scale-estimator";
 import { planArchitecture } from "@/lib/architecture-planner";
 import { generateDatabaseSchema } from "@/lib/schema-generator";
@@ -122,36 +118,16 @@ export function DesignInputForm() {
       </Button>
 
       {requirements && (
-        <div className="mt-4 flex flex-col gap-8">
-          <p className="text-xs text-muted-foreground">
-            Analyzed by:{" "}
-            {analysisSource === "ai" ? "Gemini (AI)" : "rule-based analyzer (no API key configured)"}
-          </p>
-          <RequirementsResult requirements={requirements} />
-          <ScaleEstimator
-            key={approxUserCount ?? "default"}
-            initialTotalUsers={approxUserCount}
-            onEstimatesChange={handleEstimatesChange}
-          />
-          {architecture && (
-            <div>
-              <h2 className="mb-3 text-sm font-medium">Generated Architecture</h2>
-              <ArchitectureDiagram architecture={architecture} />
-            </div>
-          )}
-          {databaseSchema && (
-            <div>
-              <h2 className="mb-3 text-sm font-medium">Database Schema</h2>
-              <DatabaseSchemaResult schema={databaseSchema} />
-            </div>
-          )}
-          {apiEndpoints && (
-            <div>
-              <h2 className="mb-3 text-sm font-medium">API Design</h2>
-              <ApiResult endpoints={apiEndpoints} />
-            </div>
-          )}
-        </div>
+        <DesignWorkspace
+          requirements={requirements}
+          analysisSource={analysisSource}
+          approxUserCount={approxUserCount}
+          onEstimatesChange={handleEstimatesChange}
+          scaleEstimates={scaleEstimates}
+          architecture={architecture}
+          databaseSchema={databaseSchema}
+          apiEndpoints={apiEndpoints}
+        />
       )}
     </div>
   );
