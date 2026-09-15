@@ -41,6 +41,12 @@ function describeFailure(tech: Technology): string {
       return "search functionality degrades or fails, but the system can fall back to simpler database queries for critical paths.";
     case "networking":
       return "requests may fail to reach backend servers entirely - this is why redundancy (multiple instances/zones) matters for this layer specifically.";
+    case "geospatial":
+      return "location-based features (matching, nearby search) degrade or fail, but non-location functionality can continue.";
+    case "external":
+      return "the system has no control over recovery - it must handle the provider's downtime gracefully (e.g. queue the action for retry) rather than assume it's always available.";
+    case "compute":
+      return "processing jobs queue up and are delayed rather than lost, if the job queue feeding this pipeline persists durably; users see pending/processing states for longer.";
     default:
       return "the dependent functionality degrades; the rest of the system should stay operational if this component is properly isolated.";
   }

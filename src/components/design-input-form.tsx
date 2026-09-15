@@ -1,18 +1,18 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DesignWorkspace } from "@/components/design-workspace";
 import { extractApproxUserCount } from "@/lib/scale-estimator";
-import { planArchitecture } from "@/lib/architecture-planner";
 import { generateDatabaseSchema } from "@/lib/schema-generator";
 import { generateApiEndpoints } from "@/lib/api-generator";
 import { generateRoadmap } from "@/lib/roadmap-generator";
 import { buildDesignSummary } from "@/lib/design-summary";
 import { generateArchitectureEvolution } from "@/lib/architecture-evolution";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
+import type { Architecture } from "@/types/architecture";
 import { DEFAULT_SCALE_INPUTS, type ScaleEstimates } from "@/types/scale";
 
 const EXAMPLE_PROMPTS = [
@@ -33,14 +33,52 @@ export function DesignInputForm() {
   const [savedDesignId, setSavedDesignId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  const [architecture, setArchitecture] = useState<Architecture | null>(null);
+  const [architectureSource, setArchitectureSource] = useState<"ai" | "rule-based" | null>(null);
+  const [isGeneratingArchitecture, setIsGeneratingArchitecture] = useState(false);
+  const [architectureError, setArchitectureError] = useState<string | null>(null);
+  // Guards against re-fetching on every scale edit - not itself rendered, so a
+  // ref (not state) is correct here and avoids a setState-in-effect warning.
+  const hasRequestedArchitectureRef = useRef(false);
+
   const handleEstimatesChange = useCallback((estimates: ScaleEstimates) => {
     setScaleEstimates(estimates);
   }, []);
 
-  const architecture = useMemo(() => {
-    if (!requirements || !scaleEstimates) return null;
-    return planArchitecture(requirements, scaleEstimates);
-  }, [requirements, scaleEstimates]);
+  const generateArchitecture = useCallback(
+    async (currentScale: ScaleEstimates) => {
+      if (!requirements) return;
+      setIsGeneratingArchitecture(true);
+      setArchitectureError(null);
+      try {
+        const response = await fetch("/api/architecture", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description, requirements, scale: currentScale }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error ?? "Failed to generate architecture.");
+        setArchitecture(data.architecture);
+        setArchitectureSource(data.source ?? null);
+      } catch (err) {
+        setArchitectureError(err instanceof Error ? err.message : "Unexpected error.");
+      } finally {
+        setIsGeneratingArchitecture(false);
+      }
+    },
+    [description, requirements]
+  );
+
+  // Architecture generation calls an LLM (real cost/latency), so unlike scale
+  // estimates it doesn't auto-recompute on every edit - it runs once
+  // automatically when estimates first arrive, then only again if the user
+  // explicitly clicks "Regenerate."
+  useEffect(() => {
+    if (requirements && scaleEstimates && !hasRequestedArchitectureRef.current) {
+      hasRequestedArchitectureRef.current = true;
+      generateArchitecture(scaleEstimates);
+    }
+  }, [requirements, scaleEstimates, generateArchitecture]);
 
   const databaseSchema = useMemo(() => {
     if (!requirements) return null;
@@ -99,6 +137,10 @@ export function DesignInputForm() {
     }
   }
 
+  function handleRegenerateArchitecture() {
+    if (scaleEstimates) generateArchitecture(scaleEstimates);
+  }
+
   function handleExampleClick(example: string) {
     setDescription(example);
     setError(null);
@@ -116,6 +158,10 @@ export function DesignInputForm() {
     setScaleEstimates(null);
     setSavedDesignId(null);
     setSaveError(null);
+    setArchitecture(null);
+    setArchitectureSource(null);
+    setArchitectureError(null);
+    hasRequestedArchitectureRef.current = false;
 
     try {
       const response = await fetch("/api/analyze", {
@@ -187,6 +233,10 @@ export function DesignInputForm() {
             roadmap={roadmap}
             designSummary={designSummary}
             evolutionStages={evolutionStages}
+            architectureSource={architectureSource}
+            isGeneratingArchitecture={isGeneratingArchitecture}
+            architectureError={architectureError}
+            onRegenerateArchitecture={handleRegenerateArchitecture}
           />
 
           <div className="mt-4 flex items-center gap-3">

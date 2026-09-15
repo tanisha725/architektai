@@ -1,7 +1,7 @@
 export interface Technology {
   id: string;
   name: string;
-  category: "database" | "cache" | "queue" | "storage" | "networking" | "search";
+  category: "database" | "cache" | "queue" | "storage" | "networking" | "search" | "geospatial" | "external" | "compute";
   description: string;
   strengths: string[];
   weaknesses: string[];
@@ -152,6 +152,48 @@ export const TECHNOLOGIES: Technology[] = [
     consistencyCharacteristics: "Eventually consistent with the source database it's synced from.",
     latencyCharacteristics: "Low latency for search queries, even across large datasets.",
     costConsiderations: "Additional infrastructure cost; only justified when simple database queries (e.g. SQL LIKE) aren't sufficient.",
+    alternatives: [],
+  },
+  {
+    id: "geospatial-index",
+    name: "Geospatial Index (e.g. PostGIS, Redis Geo)",
+    category: "geospatial",
+    description: "A data store or index specialized for location queries - 'find things near this point' - efficiently.",
+    strengths: ["Efficient proximity/radius queries", "Purpose-built for location matching (drivers, delivery, nearby search)"],
+    weaknesses: ["A plain relational table scan for location queries doesn't scale past small datasets", "Adds a specialized component to operate"],
+    typicalUseCases: ["Matching riders to nearby drivers", "Finding nearby restaurants", "Any 'near me' feature"],
+    scalingCharacteristics: "Scales with the underlying store it's built on (e.g. PostGIS scales with PostgreSQL; Redis Geo scales with Redis).",
+    consistencyCharacteristics: "Typically as consistent as its underlying store - strong if built into the primary database (PostGIS), eventually consistent if a separate synced index.",
+    latencyCharacteristics: "Low latency for proximity queries - this is specifically what makes it worth using over a naive distance calculation in application code.",
+    costConsiderations: "Often near-free if it's an extension on a database you already run (PostGIS); a separate dedicated service adds real operational cost.",
+    alternatives: ["elasticsearch"],
+  },
+  {
+    id: "external-payment-provider",
+    name: "External Payment Provider (e.g. Stripe, Razorpay)",
+    category: "external",
+    description: "A third-party service that handles payment processing, so the system never directly stores card details.",
+    strengths: ["Offloads PCI-DSS compliance burden entirely", "Battle-tested fraud detection and reliability"],
+    weaknesses: ["Per-transaction fees", "An external dependency outside the system's own control - its outages become your outages for checkout"],
+    typicalUseCases: ["Any system that accepts payments (e-commerce, food delivery, ride-sharing)"],
+    scalingCharacteristics: "Scales automatically - it's the provider's infrastructure, not something this system provisions.",
+    consistencyCharacteristics: "Typically communicates results via webhooks - the system must handle payment confirmation as an asynchronous, eventually-consistent event, not an instant response.",
+    latencyCharacteristics: "Adds real network latency (an external API call) to the checkout path.",
+    costConsiderations: "Per-transaction fee (commonly 2-3%) - a genuine, ongoing cost that scales with revenue, not just traffic.",
+    alternatives: [],
+  },
+  {
+    id: "video-transcoding",
+    name: "Video Transcoding Pipeline (e.g. AWS MediaConvert, self-hosted ffmpeg workers)",
+    category: "compute",
+    description: "A processing pipeline that converts uploaded video into multiple resolutions/bitrates for adaptive streaming playback.",
+    strengths: ["Enables smooth playback across varying network conditions (adaptive bitrate)", "Normalizes inconsistent upload formats"],
+    weaknesses: ["Computationally expensive", "Adds meaningful delay between upload and the video becoming watchable"],
+    typicalUseCases: ["Any video-upload platform (YouTube-like systems)"],
+    scalingCharacteristics: "Scales horizontally by adding worker capacity - naturally suited to a queue-driven worker pool, since jobs are independent.",
+    consistencyCharacteristics: "Not applicable - a processing step, not a data store.",
+    latencyCharacteristics: "High latency by nature (seconds to minutes per video) - this is why it must run asynchronously, never in the request path.",
+    costConsiderations: "Compute-intensive; cost scales directly with upload volume and video length, not just user count.",
     alternatives: [],
   },
 ];

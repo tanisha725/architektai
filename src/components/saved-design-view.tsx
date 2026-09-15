@@ -61,6 +61,10 @@ export function SavedDesignView({
         roadmap={roadmap}
         designSummary={designSummary}
         evolutionStages={evolutionStages}
+        architectureSource={architecture.domain ? "ai" : "rule-based"}
+        isGeneratingArchitecture={false}
+        architectureError={null}
+        onRegenerateArchitecture={() => {}}
       />
     </div>
   );
