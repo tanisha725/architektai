@@ -313,6 +313,30 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 12 — AI Interview Mode
+
+### When "no rule-based fallback" is the honest design, not a gap
+- **What**: Every previous AI feature (requirement analysis) had a real rule-based fallback that still did useful work. Interview Mode's *evaluation* step has no equivalent - there's no sensible pattern-matching way to grade free-text reasoning quality. The fallback here is honest instead: `evaluation: null` plus a self-assessment prompt, not a fake score from keyword matching.
+- **Why here**: A fake rule-based score (e.g. "answer contains the word 'trade-off', +10 points") would be worse than no score - it would look authoritative while being meaningless, actively misleading a user trying to learn from the feedback.
+- **Takeaway**: Not every AI feature needs a "dumb but functional" fallback - sometimes the honest degrade path is admitting the AI-only capability isn't available right now, rather than manufacturing a lower-quality substitute that pretends to be the same thing.
+
+### Grounding AI output in generated data, not just user input
+- **What**: `buildDesignSummary()` feeds the interview prompts a compact description built from the *outputs* of four earlier generators (requirements, architecture, database schema, scale estimates) - not the user's raw original text.
+- **Why here**: This is why the AI-generated question referenced "likes, comments, and follow relationships" specifically - those are exact table names from the Database tab, not paraphrased user input. Grounding in structured, already-validated data produces sharper, more specific prompts than grounding in free text would.
+- **Takeaway**: When a pipeline has already turned messy input into clean structured data, later stages should build on that structured data, not re-derive context from the original raw text - each stage's output is higher-signal than what came before it.
+
+### A state machine beats a pile of booleans for multi-step async UI
+- **What**: `InterviewTab` uses one `phase` variable with six named values instead of separate `isLoadingQuestions`, `isSubmittingAnswer`, `isEvaluating` booleans.
+- **Why here**: With independent booleans, the type system allows nonsensical combinations (what does `isLoadingQuestions && isSubmittingAnswer` both true even mean?) that have to be prevented by careful code elsewhere. A single `phase` string makes invalid combinations structurally impossible - only one phase is ever "current" by definition.
+- **Takeaway**: Any UI with more than two or three sequential async steps (start -> load -> act -> evaluate -> repeat/finish) is a good candidate for a named-phase state variable instead of boolean flags - it gets more valuable as the number of steps grows, since booleans scale combinatorially while a phase enum scales linearly.
+
+### Real infrastructure limits surfaced by continued live use
+- **What**: During testing, Gemini's free tier returned 503s repeatedly across multiple independent calls (analyze, questions, evaluate) in the same session - not a one-off blip like the earlier incident, but sustained pressure suggesting the free tier's rate limits are being hit under this session's testing load.
+- **Why it matters**: Every layer of the app degraded correctly under this real, sustained failure condition - which is a stronger validation of the fallback design than any single deliberate test could have provided, since it exercised the actual failure mode (not a simulated one) across multiple independent endpoints at once.
+- **Takeaway**: A free-tier API key comes with real operational limits worth knowing about going in, not just a cost of zero - "free" doesn't mean "unlimited," and a resume-ready project should be able to say plainly what happens when the AI provider is unavailable, because eventually it will be.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
