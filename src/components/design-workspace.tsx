@@ -7,7 +7,9 @@ import { DatabaseSchemaResult } from "@/components/database-schema-result";
 import { ApiResult } from "@/components/api-result";
 import { RoadmapResult } from "@/components/roadmap-result";
 import { InterviewTab } from "@/components/interview-tab";
+import { ArchitectureEvolutionResult } from "@/components/architecture-evolution-result";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
+import type { EvolutionStage } from "@/types/evolution";
 import type { ScaleEstimates } from "@/types/scale";
 import type { Architecture } from "@/types/architecture";
 import type { DatabaseSchema } from "@/types/database";
@@ -25,6 +27,7 @@ interface DesignWorkspaceProps {
   apiEndpoints: ApiEndpoint[] | null;
   roadmap: RoadmapPhase[] | null;
   designSummary: string | null;
+  evolutionStages: EvolutionStage[] | null;
 }
 
 export function DesignWorkspace({
@@ -38,6 +41,7 @@ export function DesignWorkspace({
   apiEndpoints,
   roadmap,
   designSummary,
+  evolutionStages,
 }: DesignWorkspaceProps) {
   return (
     <div className="mt-4 flex flex-col gap-4">
@@ -55,6 +59,7 @@ export function DesignWorkspace({
           <TabsTrigger value="api">API</TabsTrigger>
           <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
           <TabsTrigger value="interview">Interview</TabsTrigger>
+          <TabsTrigger value="evolution">Evolution</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" keepMounted>
@@ -68,7 +73,7 @@ export function DesignWorkspace({
           />
         </TabsContent>
 
-        <TabsContent value="requirements" keepMounted>
+        <TabsContent value="requirements">
           <RequirementsResult requirements={requirements} />
         </TabsContent>
 
@@ -80,7 +85,7 @@ export function DesignWorkspace({
           />
         </TabsContent>
 
-        <TabsContent value="architecture" keepMounted>
+        <TabsContent value="architecture">
           {architecture ? (
             <ArchitectureDiagram architecture={architecture} />
           ) : (
@@ -88,20 +93,24 @@ export function DesignWorkspace({
           )}
         </TabsContent>
 
-        <TabsContent value="database" keepMounted>
+        <TabsContent value="database">
           {databaseSchema ? <DatabaseSchemaResult schema={databaseSchema} /> : <EmptyTabState />}
         </TabsContent>
 
-        <TabsContent value="api" keepMounted>
+        <TabsContent value="api">
           {apiEndpoints ? <ApiResult endpoints={apiEndpoints} /> : <EmptyTabState />}
         </TabsContent>
 
-        <TabsContent value="roadmap" keepMounted>
+        <TabsContent value="roadmap">
           {roadmap ? <RoadmapResult phases={roadmap} /> : <EmptyTabState />}
         </TabsContent>
 
         <TabsContent value="interview" keepMounted>
           {designSummary ? <InterviewTab designSummary={designSummary} /> : <EmptyTabState />}
+        </TabsContent>
+
+        <TabsContent value="evolution">
+          {evolutionStages ? <ArchitectureEvolutionResult stages={evolutionStages} /> : <EmptyTabState />}
         </TabsContent>
       </Tabs>
     </div>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   Background,
   Controls,
   type Node,
   type Edge,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import { ComponentDetail } from "@/components/component-detail";
 import { layoutArchitecture } from "@/lib/architecture-layout";
@@ -15,6 +16,16 @@ import type { Architecture } from "@/types/architecture";
 export function ArchitectureDiagram({ architecture }: { architecture: Architecture }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = architecture.components.find((c) => c.id === selectedId) ?? null;
+  const instanceRef = useRef<ReactFlowInstance | null>(null);
+
+  // The `fitView` prop alone can mis-measure when this diagram mounts inside
+  // a hidden tab panel or stacked with several other diagrams (Evolution tab)
+  // - the container's layout hasn't necessarily settled yet at mount time.
+  // Re-running fitView from onInit, after a tick, forces a correct refit.
+  function handleInit(instance: ReactFlowInstance) {
+    instanceRef.current = instance;
+    requestAnimationFrame(() => instance.fitView());
+  }
 
   const positions = useMemo(() => layoutArchitecture(architecture), [architecture]);
 
@@ -56,6 +67,7 @@ export function ArchitectureDiagram({ architecture }: { architecture: Architectu
           nodes={nodes}
           edges={edges}
           onNodeClick={(_, node) => setSelectedId(node.id === selectedId ? null : node.id)}
+          onInit={handleInit}
           fitView
           nodesDraggable={false}
           nodesConnectable={false}

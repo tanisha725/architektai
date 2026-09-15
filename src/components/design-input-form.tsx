@@ -10,6 +10,7 @@ import { generateDatabaseSchema } from "@/lib/schema-generator";
 import { generateApiEndpoints } from "@/lib/api-generator";
 import { generateRoadmap } from "@/lib/roadmap-generator";
 import { buildDesignSummary } from "@/lib/design-summary";
+import { generateArchitectureEvolution } from "@/lib/architecture-evolution";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { ScaleEstimates } from "@/types/scale";
 
@@ -56,6 +57,11 @@ export function DesignInputForm() {
     if (!requirements || !architecture || !databaseSchema || !scaleEstimates) return null;
     return buildDesignSummary(requirements, architecture, databaseSchema, scaleEstimates);
   }, [requirements, architecture, databaseSchema, scaleEstimates]);
+
+  const evolutionStages = useMemo(() => {
+    if (!requirements) return null;
+    return generateArchitectureEvolution(requirements);
+  }, [requirements]);
 
   function handleExampleClick(example: string) {
     setDescription(example);
@@ -141,6 +147,7 @@ export function DesignInputForm() {
           apiEndpoints={apiEndpoints}
           roadmap={roadmap}
           designSummary={designSummary}
+          evolutionStages={evolutionStages}
         />
       )}
     </div>
