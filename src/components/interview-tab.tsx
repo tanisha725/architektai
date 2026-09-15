@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingRow } from "@/components/ui/spinner";
 import type { InterviewEvaluation } from "@/lib/schemas/interview-schema";
 
 type Phase = "not-started" | "loading-questions" | "answering" | "evaluating" | "showing-evaluation" | "finished" | "error";
@@ -92,7 +93,7 @@ export function InterviewTab({ designSummary }: { designSummary: string }) {
   }
 
   if (phase === "loading-questions") {
-    return <p className="text-sm text-muted-foreground">Preparing interview questions...</p>;
+    return <LoadingRow label="Preparing interview questions..." />;
   }
 
   if (phase === "error") {
@@ -151,7 +152,7 @@ export function InterviewTab({ designSummary }: { designSummary: string }) {
         </Button>
       )}
 
-      {phase === "evaluating" && <p className="text-sm text-muted-foreground">Evaluating your answer...</p>}
+      {phase === "evaluating" && <LoadingRow label="Evaluating your answer..." />}
 
       {phase === "showing-evaluation" && (
         <div className="flex flex-col gap-3">

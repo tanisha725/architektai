@@ -11,6 +11,7 @@ import {
 } from "@xyflow/react";
 import { ComponentDetail } from "@/components/component-detail";
 import { layoutArchitecture } from "@/lib/architecture-layout";
+import { getComponentGroup, GROUP_COLORS } from "@/lib/component-groups";
 import type { Architecture } from "@/types/architecture";
 
 export function ArchitectureDiagram({ architecture }: { architecture: Architecture }) {
@@ -31,22 +32,36 @@ export function ArchitectureDiagram({ architecture }: { architecture: Architectu
 
   const nodes: Node[] = useMemo(
     () =>
-      architecture.components.map((component) => ({
-        id: component.id,
-        position: positions[component.id] ?? { x: 0, y: 0 },
-        data: { label: component.name },
-        selected: component.id === selectedId,
-        style: {
-          border: component.id === selectedId ? "2px solid #171717" : "1px solid #e5e5e5",
-          borderRadius: 8,
-          padding: 10,
-          fontSize: 13,
-          background: "white",
-          width: 180,
-        },
-      })),
+      architecture.components.map((component) => {
+        const group = getComponentGroup(component);
+        const colors = GROUP_COLORS[group];
+        const isSelected = component.id === selectedId;
+        return {
+          id: component.id,
+          position: positions[component.id] ?? { x: 0, y: 0 },
+          data: { label: component.name },
+          selected: isSelected,
+          style: {
+            border: `${isSelected ? 2 : 1}px solid ${colors.border}`,
+            borderRadius: 8,
+            padding: 10,
+            fontSize: 13,
+            fontWeight: isSelected ? 600 : 500,
+            background: colors.background,
+            color: "#1f2937",
+            width: 180,
+            boxShadow: isSelected ? "0 0 0 3px rgba(0,0,0,0.06)" : undefined,
+          },
+        };
+      }),
     [architecture, positions, selectedId]
   );
+
+  const groupsPresent = useMemo(() => {
+    const set = new Set<ReturnType<typeof getComponentGroup>>();
+    for (const c of architecture.components) set.add(getComponentGroup(c));
+    return Array.from(set);
+  }, [architecture]);
 
   const edges: Edge[] = useMemo(
     () =>
@@ -76,6 +91,21 @@ export function ArchitectureDiagram({ architecture }: { architecture: Architectu
           <Background />
           <Controls showInteractive={false} />
         </ReactFlow>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        {groupsPresent.map((group) => {
+          const colors = GROUP_COLORS[group];
+          return (
+            <span key={group} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span
+                className="inline-block size-2.5 rounded-full"
+                style={{ background: colors.background, border: `1.5px solid ${colors.border}` }}
+              />
+              {colors.label}
+            </span>
+          );
+        })}
       </div>
 
       <p className="text-xs text-muted-foreground">

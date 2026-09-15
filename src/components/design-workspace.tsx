@@ -1,6 +1,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LoadingRow } from "@/components/ui/spinner";
 import { RequirementsResult } from "@/components/requirements-result";
 import { ScaleEstimator } from "@/components/scale-estimator";
 import { ArchitectureDiagram } from "@/components/architecture-diagram";
@@ -142,7 +143,7 @@ function ArchitectureTab({
   onRegenerate: () => void;
 }) {
   if (isGenerating) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">Reasoning through the architecture...</p>;
+    return <LoadingRow label="Reasoning through the architecture..." />;
   }
 
   if (!architecture) {
@@ -186,9 +187,7 @@ function ArchitectureTab({
 
 function EmptyTabState() {
   return (
-    <p className="py-8 text-center text-sm text-muted-foreground">
-      Still computing...
-    </p>
+    <LoadingRow label="Still computing..." />
   );
 }
 

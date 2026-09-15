@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Spinner } from "@/components/ui/spinner";
 import { DesignWorkspace } from "@/components/design-workspace";
 import { extractApproxUserCount } from "@/lib/scale-estimator";
 import { generateDatabaseSchema } from "@/lib/schema-generator";
@@ -229,6 +230,7 @@ export function DesignInputForm() {
         size="lg"
         className="self-start"
       >
+        {isSubmitting && <Spinner className="size-4" />}
         {isSubmitting ? "Analyzing..." : "Generate Design"}
       </Button>
 
@@ -258,6 +260,7 @@ export function DesignInputForm() {
               onClick={handleSave}
               disabled={isSaving || !architecture || !databaseSchema}
             >
+              {isSaving && <Spinner className="size-4" />}
               {isSaving ? "Saving..." : "Save Design"}
             </Button>
             {savedDesignId && (

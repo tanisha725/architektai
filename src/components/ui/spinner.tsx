@@ -1,0 +1,27 @@
+export function Spinner({ className }: { className?: string }) {
+  return (
+    <svg
+      className={`animate-spin ${className ?? "size-4"}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+      <path
+        d="M22 12a10 10 0 0 0-10-10"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function LoadingRow({ label }: { label: string }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+      <Spinner />
+      <span>{label}</span>
+    </div>
+  );
+}
