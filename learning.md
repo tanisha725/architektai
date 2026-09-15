@@ -301,6 +301,18 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Real-world incident — 44-second fallback delay
+
+### A live failure surfaced a real gap in the "graceful fallback" design
+- **What**: While using the app for real, Gemini returned a transient `503 UNAVAILABLE` ("high demand"). The Phase 6 fallback design worked correctly - it caught the error and fell back to the rule-based analyzer - but the *whole request* took 44 seconds before that fallback kicked in, leaving the "Analyzing..." button stuck for a very long time.
+- **Why it happened**: The `@google/genai` SDK defaults to 5 retry attempts with exponential backoff (1s, 2s, 4s, 8s, 16s...) on retryable status codes (408, 429, 5xx). Our own try/catch/fallback logic was correct, but it only runs *after* the SDK exhausts its own retries - the fallback was fast, the thing it was waiting on wasn't.
+- **How it was caught**: Not by testing - by the user pasting a real dev server log from actually using the app. This is a different verification channel than anything used so far in the project (not a build, not a browser screenshot, not a curl test) - live usage surfaced a failure mode that no deliberate test had been designed to trigger (a transient upstream 503 is hard to reproduce on demand).
+- **How it was fixed**: Checked the SDK's actual installed type definitions (`node_modules/@google/genai/dist/node/node.d.ts`) rather than guessing - confirmed `config.httpOptions.timeout` and `config.httpOptions.retryOptions.attempts` both exist on `GenerateContentConfig`. Set `timeout: 10_000` and `attempts: 2`, bounding the worst case to roughly 10-20 seconds instead of 44+.
+- **A wrong guess caught immediately by the compiler**: First attempt put `retryOptions` as a sibling of `httpOptions` in the config object - TypeScript's `TS2353: Object literal may only specify known properties` caught it instantly, revealing `retryOptions` actually nests *inside* `httpOptions`. This is exactly why writing the code and letting the compiler point at the real shape (rather than fully researching every nested field before writing anything) is the faster and just as reliable path when working against typed SDKs.
+- **Takeaway**: A fallback mechanism being *correct* and a fallback mechanism being *fast enough* are two different properties - the first was verified in Phase 6.5, the second only surfaced under a real transient failure in production-like conditions. Reading actual SDK type definitions (ground truth) resolved this faster and more reliably than another round of doc-fetching would have, continuing the pattern from Phase 6.5's model-name lesson: when available, prefer checking the real, installed artifact over any description of it.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
