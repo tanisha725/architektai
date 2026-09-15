@@ -36,6 +36,28 @@ export const AIConnectionSchema = z.object({
   label: z.string().describe("Short label describing what flows over this connection, e.g. 'order events' or 'location updates'."),
 });
 
+export const AIFieldSchema = z.object({
+  name: z.string().describe("Column name in snake_case, e.g. 'delivery_status'."),
+  type: z.enum(["UUID", "VARCHAR", "TEXT", "INTEGER", "DECIMAL", "BOOLEAN", "TIMESTAMP", "ENUM"]),
+  enumValues: z
+    .array(z.string())
+    .optional()
+    .describe("Only for type ENUM - the allowed values, e.g. a state machine like ['CREATED','PAID','DELIVERED']."),
+});
+
+export const AIRelationshipSchema = z.object({
+  fromField: z.string().describe("The foreign key column name on this entity - must also appear in this entity's fields."),
+  targetEntity: z.string().describe("The name of the entity this foreign key references."),
+  description: z.string().describe("Plain-language relationship description, e.g. 'Each order belongs to one restaurant.'"),
+});
+
+export const AIEntitySchema = z.object({
+  name: z.string().describe("Table name in snake_case plural, e.g. 'orders' or 'delivery_partners'."),
+  purpose: z.string().describe("What this entity represents and why it's needed in this specific domain."),
+  fields: z.array(AIFieldSchema).min(1).max(12),
+  relationships: z.array(AIRelationshipSchema),
+});
+
 export const AIArchitectureSchema = z.object({
   domain: z.string().describe("One short phrase identifying the product domain, e.g. 'food delivery marketplace' or 'photo/video social network'."),
   components: z.array(AIComponentSchema).min(3).max(16),
@@ -45,7 +67,13 @@ export const AIArchitectureSchema = z.object({
     .min(3)
     .max(8)
     .describe("The 'why this architecture' story as short bullet points, each tied to a concrete requirement, workload characteristic, or scale number - not generic statements."),
+  entities: z
+    .array(AIEntitySchema)
+    .min(1)
+    .max(10)
+    .describe("The domain's data entities (e.g. for food delivery: orders, restaurants, menu_items - NOT generic entities from a different domain)."),
 });
 
 export type AIArchitecture = z.infer<typeof AIArchitectureSchema>;
 export type AIComponent = z.infer<typeof AIComponentSchema>;
+export type AIEntity = z.infer<typeof AIEntitySchema>;

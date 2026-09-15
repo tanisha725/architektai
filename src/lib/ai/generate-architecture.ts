@@ -26,6 +26,7 @@ Rules:
 - Every "reason" must reference the actual domain, a specific requirement, or a specific scale number - never a generic justification that could apply to any product.
 - Keep the architecture as simple as the requirements and scale actually justify - do not add a component "to look complete." A simple, well-justified architecture is better than a complex one with unjustified pieces.
 - designRationale should read as the "why this architecture" story a candidate would tell in an interview.
+- Also identify the domain's data ENTITIES (e.g. for food delivery: orders, restaurants, menu_items, delivery_partners - NOT generic entities like "posts" unless the product actually has posts). For any entity with a multi-step lifecycle (an order, a trip, a video upload), include a status/state field of type ENUM with the actual state values in sequence (e.g. CREATED, PAYMENT_PENDING, PAID, DELIVERED) - this is how a domain-specific state machine gets represented. Express foreign keys as a field on the entity plus a matching entry in that entity's relationships array.
 
 Known technologies (the ONLY technologies you may reference by id for infrastructure components):
 ${KNOWLEDGE_BASE_TEXT}`;
@@ -52,6 +53,37 @@ const componentSchema = {
   required: ["id", "name", "kind", "purpose", "reason", "scalingStrategy", "failureBehavior"],
 };
 
+const fieldSchema = {
+  type: Type.OBJECT,
+  properties: {
+    name: { type: Type.STRING },
+    type: { type: Type.STRING, enum: ["UUID", "VARCHAR", "TEXT", "INTEGER", "DECIMAL", "BOOLEAN", "TIMESTAMP", "ENUM"] },
+    enumValues: { type: Type.ARRAY, items: { type: Type.STRING } },
+  },
+  required: ["name", "type"],
+};
+
+const relationshipSchema = {
+  type: Type.OBJECT,
+  properties: {
+    fromField: { type: Type.STRING },
+    targetEntity: { type: Type.STRING },
+    description: { type: Type.STRING },
+  },
+  required: ["fromField", "targetEntity", "description"],
+};
+
+const entitySchema = {
+  type: Type.OBJECT,
+  properties: {
+    name: { type: Type.STRING },
+    purpose: { type: Type.STRING },
+    fields: { type: Type.ARRAY, items: fieldSchema },
+    relationships: { type: Type.ARRAY, items: relationshipSchema },
+  },
+  required: ["name", "purpose", "fields", "relationships"],
+};
+
 const responseSchema = {
   type: Type.OBJECT,
   properties: {
@@ -70,8 +102,9 @@ const responseSchema = {
       },
     },
     designRationale: { type: Type.ARRAY, items: { type: Type.STRING } },
+    entities: { type: Type.ARRAY, items: entitySchema },
   },
-  required: ["domain", "components", "connections", "designRationale"],
+  required: ["domain", "components", "connections", "designRationale", "entities"],
 };
 
 export async function generateArchitectureWithAI(

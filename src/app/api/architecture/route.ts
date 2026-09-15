@@ -1,25 +1,53 @@
 import { NextResponse } from "next/server";
 import { planArchitecture } from "@/lib/architecture-planner";
 import { generateArchitectureWithAI, toArchitecture } from "@/lib/ai/generate-architecture";
+import { generateDatabaseSchemaFromEntities, generateApiEndpointsFromEntities } from "@/lib/domain-schema-generator";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { Architecture } from "@/types/architecture";
 import type { ScaleEstimates } from "@/types/scale";
+import type { DatabaseSchema } from "@/types/database";
+import type { ApiEndpoint } from "@/types/api";
+
+interface ArchitectureResult {
+  architecture: Architecture;
+  source: "ai" | "rule-based";
+  // Only present when source is "ai" - derived from the AI's domain entities.
+  // When null, the caller should fall back to the requirement-text-based
+  // rule-based schema/API generators instead.
+  databaseSchema: DatabaseSchema | null;
+  apiEndpoints: ApiEndpoint[] | null;
+}
 
 async function getArchitecture(
   description: string,
   requirements: AnalyzedRequirements,
   scale: ScaleEstimates
-): Promise<{ architecture: Architecture; source: "ai" | "rule-based" }> {
+): Promise<ArchitectureResult> {
   if (!process.env.GEMINI_API_KEY) {
-    return { architecture: planArchitecture(requirements, scale), source: "rule-based" };
+    return {
+      architecture: planArchitecture(requirements, scale),
+      source: "rule-based",
+      databaseSchema: null,
+      apiEndpoints: null,
+    };
   }
 
   try {
     const aiArchitecture = await generateArchitectureWithAI(description, requirements, scale);
-    return { architecture: toArchitecture(aiArchitecture), source: "ai" };
+    return {
+      architecture: toArchitecture(aiArchitecture),
+      source: "ai",
+      databaseSchema: generateDatabaseSchemaFromEntities(aiArchitecture.entities),
+      apiEndpoints: generateApiEndpointsFromEntities(aiArchitecture.entities),
+    };
   } catch (err) {
     console.error("AI architecture generation failed, falling back to rule-based planner:", err);
-    return { architecture: planArchitecture(requirements, scale), source: "rule-based" };
+    return {
+      architecture: planArchitecture(requirements, scale),
+      source: "rule-based",
+      databaseSchema: null,
+      apiEndpoints: null,
+    };
   }
 }
 
@@ -40,10 +68,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const { architecture, source } = await getArchitecture(
-    description,
-    requirements as AnalyzedRequirements,
-    scale as ScaleEstimates
-  );
-  return NextResponse.json({ architecture, source });
+  const result = await getArchitecture(description, requirements as AnalyzedRequirements, scale as ScaleEstimates);
+  return NextResponse.json(result);
 }

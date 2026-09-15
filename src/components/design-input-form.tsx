@@ -13,6 +13,8 @@ import { buildDesignSummary } from "@/lib/design-summary";
 import { generateArchitectureEvolution } from "@/lib/architecture-evolution";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { Architecture } from "@/types/architecture";
+import type { DatabaseSchema } from "@/types/database";
+import type { ApiEndpoint } from "@/types/api";
 import { DEFAULT_SCALE_INPUTS, type ScaleEstimates } from "@/types/scale";
 
 const EXAMPLE_PROMPTS = [
@@ -37,6 +39,11 @@ export function DesignInputForm() {
   const [architectureSource, setArchitectureSource] = useState<"ai" | "rule-based" | null>(null);
   const [isGeneratingArchitecture, setIsGeneratingArchitecture] = useState(false);
   const [architectureError, setArchitectureError] = useState<string | null>(null);
+  // Domain-derived schema/API from the AI's entities - only set when
+  // architecture generation succeeds via AI. Null otherwise, in which case
+  // the useMemo below falls back to the requirement-text-based generators.
+  const [aiDatabaseSchema, setAiDatabaseSchema] = useState<DatabaseSchema | null>(null);
+  const [aiApiEndpoints, setAiApiEndpoints] = useState<ApiEndpoint[] | null>(null);
   // Guards against re-fetching on every scale edit - not itself rendered, so a
   // ref (not state) is correct here and avoids a setState-in-effect warning.
   const hasRequestedArchitectureRef = useRef(false);
@@ -60,6 +67,8 @@ export function DesignInputForm() {
         if (!response.ok) throw new Error(data?.error ?? "Failed to generate architecture.");
         setArchitecture(data.architecture);
         setArchitectureSource(data.source ?? null);
+        setAiDatabaseSchema(data.databaseSchema ?? null);
+        setAiApiEndpoints(data.apiEndpoints ?? null);
       } catch (err) {
         setArchitectureError(err instanceof Error ? err.message : "Unexpected error.");
       } finally {
@@ -81,14 +90,16 @@ export function DesignInputForm() {
   }, [requirements, scaleEstimates, generateArchitecture]);
 
   const databaseSchema = useMemo(() => {
+    if (aiDatabaseSchema) return aiDatabaseSchema;
     if (!requirements) return null;
     return generateDatabaseSchema(requirements);
-  }, [requirements]);
+  }, [requirements, aiDatabaseSchema]);
 
   const apiEndpoints = useMemo(() => {
+    if (aiApiEndpoints) return aiApiEndpoints;
     if (!requirements || !databaseSchema) return null;
     return generateApiEndpoints(requirements, databaseSchema);
-  }, [requirements, databaseSchema]);
+  }, [requirements, databaseSchema, aiApiEndpoints]);
 
   const roadmap = useMemo(() => {
     if (!architecture) return null;
@@ -161,6 +172,8 @@ export function DesignInputForm() {
     setArchitecture(null);
     setArchitectureSource(null);
     setArchitectureError(null);
+    setAiDatabaseSchema(null);
+    setAiApiEndpoints(null);
     hasRequestedArchitectureRef.current = false;
 
     try {

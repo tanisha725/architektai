@@ -1,12 +1,13 @@
 import type { Architecture } from "@/types/architecture";
 import type { RoadmapPhase } from "@/types/roadmap";
 
-// Each conditional phase is keyed to a specific component id from the
-// generated architecture - same "traceable to a concrete trigger" discipline
-// as every other generator in this app. The roadmap is a direct consequence
-// of what was actually generated, not a generic checklist.
+// Each conditional phase is keyed to a specific TECHNOLOGY id, not a
+// component id - component ids are now freely chosen by the AI generator
+// (e.g. "redis-cache" instead of "cache"), but technologyId is always one of
+// our verified knowledge-base ids regardless of what the component is named,
+// so it's the stable thing to match against.
 export function generateRoadmap(architecture: Architecture): RoadmapPhase[] {
-  const componentIds = new Set(architecture.components.map((c) => c.id));
+  const technologyIds = new Set(architecture.components.map((c) => c.technologyId));
   const phases: RoadmapPhase[] = [];
   let n = 1;
 
@@ -50,7 +51,7 @@ export function generateRoadmap(architecture: Architecture): RoadmapPhase[] {
     expectedOutcome: "A working end-to-end product a real user could use.",
   });
 
-  if (componentIds.has("cache")) {
+  if (technologyIds.has("redis")) {
     phases.push({
       phaseNumber: n++,
       title: "Caching Layer",
@@ -62,7 +63,7 @@ export function generateRoadmap(architecture: Architecture): RoadmapPhase[] {
     });
   }
 
-  if (componentIds.has("object-storage")) {
+  if (technologyIds.has("object-storage")) {
     phases.push({
       phaseNumber: n++,
       title: "Media Upload & Storage",
@@ -74,7 +75,7 @@ export function generateRoadmap(architecture: Architecture): RoadmapPhase[] {
     });
   }
 
-  if (componentIds.has("message-queue")) {
+  if (technologyIds.has("message-queue")) {
     phases.push({
       phaseNumber: n++,
       title: "Async / Background Processing",
@@ -86,7 +87,7 @@ export function generateRoadmap(architecture: Architecture): RoadmapPhase[] {
     });
   }
 
-  if (componentIds.has("search")) {
+  if (technologyIds.has("elasticsearch")) {
     phases.push({
       phaseNumber: n++,
       title: "Search",
@@ -98,7 +99,7 @@ export function generateRoadmap(architecture: Architecture): RoadmapPhase[] {
     });
   }
 
-  if (componentIds.has("load-balancer") || componentIds.has("api-gateway")) {
+  if (technologyIds.has("load-balancer") || technologyIds.has("api-gateway")) {
     phases.push({
       phaseNumber: n++,
       title: "Horizontal Scaling",
@@ -107,6 +108,42 @@ export function generateRoadmap(architecture: Architecture): RoadmapPhase[] {
       why: "This phase only makes sense once a single instance is a known bottleneck - scaling out before that is solving a problem you don't have yet.",
       prerequisites: "A working, stateless backend (Phase 3-4) and a way to measure it's actually under load.",
       expectedOutcome: "The system can handle the peak traffic estimated in the Scale tab without a single instance being a bottleneck.",
+    });
+  }
+
+  if (technologyIds.has("geospatial-index")) {
+    phases.push({
+      phaseNumber: n++,
+      title: "Geospatial Matching",
+      whatToBuild: "Location indexing and proximity queries (e.g. matching drivers/delivery partners to nearby requests).",
+      conceptToLearn: "Geospatial indexing (geohashing, R-trees), proximity search, trade-offs between accuracy and query speed.",
+      why: "Location matching is a distinct subsystem with its own data access pattern - worth isolating once the core product (orders/trips) already works without it.",
+      prerequisites: "Phase 3 (the entity being matched - an order, a ride request - must already exist).",
+      expectedOutcome: "Users can be matched to nearby counterparts (drivers, delivery partners, restaurants) efficiently, not via a full table scan.",
+    });
+  }
+
+  if (technologyIds.has("external-payment-provider")) {
+    phases.push({
+      phaseNumber: n++,
+      title: "Payment Integration",
+      whatToBuild: "Checkout flow integrated with an external payment provider, plus webhook handling for asynchronous payment confirmation.",
+      conceptToLearn: "Webhooks, idempotency keys (to avoid double-charging on retry), handling payment failure/refund flows.",
+      why: "Payment confirmation from a real provider arrives asynchronously (a webhook), not as the checkout request's direct response - this changes how the order flow must be built, and is worth understanding before building it.",
+      prerequisites: "Phase 3 (an order/cart to actually charge for).",
+      expectedOutcome: "A user can pay, and the system correctly reflects payment status even when the provider's confirmation arrives seconds later.",
+    });
+  }
+
+  if (technologyIds.has("video-transcoding")) {
+    phases.push({
+      phaseNumber: n++,
+      title: "Video Processing Pipeline",
+      whatToBuild: "Asynchronous transcoding of uploaded video into multiple resolutions/bitrates after upload.",
+      conceptToLearn: "Worker pools for CPU-intensive jobs, progress tracking for long-running async work, adaptive bitrate streaming basics.",
+      why: "Transcoding takes real time (seconds to minutes) - it must run asynchronously after upload, never block the upload response, which is why it's a separate phase from basic media upload.",
+      prerequisites: "Phase 6-equivalent media upload (video must be uploaded before it can be processed).",
+      expectedOutcome: "Uploaded video becomes watchable in multiple qualities without the upload request itself waiting on processing.",
     });
   }
 
