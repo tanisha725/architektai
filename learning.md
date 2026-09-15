@@ -426,6 +426,20 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase E — UI Polish
+
+### Grouping by a stable property, not a display property
+- **What**: `getComponentGroup()` groups diagram nodes by `kind` (AI-generated) or by `technologyId` (rule-based fallback) - never by `name`, which is the one field guaranteed to vary (an AI might call the same thing "Order Service" or "Order Management Service" across two runs).
+- **Why here**: This is the same lesson as the Phase B roadmap-generator fix, applied to a new piece of code before it could become a new bug - group/categorize by the most stable, most-constrained field available, not the most human-readable one. `kind` is a fixed Zod enum; `technologyId` is a fixed knowledge-base id; `name` is free text the AI can phrase differently every time.
+- **Takeaway**: Once you've been bitten by matching on a freely-generated field, it's worth auditing new code for the same mistake before it ships, not just fixing the one instance that broke - the same category of bug tends to recur in sibling code written under the same assumptions.
+
+### A visual system that degrades gracefully across two very different data sources
+- **What**: The same grouping/coloring code has to work correctly whether the architecture came from the AI (which sets `kind` explicitly) or the rule-based fallback (which never sets `kind` at all, only `technologyId`). `getComponentGroup()` handles both without the calling component (`ArchitectureDiagram`) needing to know or care which source produced the data.
+- **Why this mattered**: The entire app has run on a "two sources, one shape" principle since Phase 6 (AI vs. rule-based, always converging on the same TypeScript type) - this is the same discipline extended into a new dimension (visual presentation, not just data shape). The diagram doesn't have an "AI mode" and a "fallback mode" - it has one rendering path that happens to receive slightly different inputs.
+- **Takeaway**: When a system already has two data sources that must produce structurally identical output, new features built on top of that output (like a color-coding scheme) should stay agnostic to which source produced it - a feature that only works for one source is a sign the earlier "unify the sources" work didn't go far enough, or that the new feature reached past the unified interface for something it shouldn't have.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
