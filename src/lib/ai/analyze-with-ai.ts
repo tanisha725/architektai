@@ -41,6 +41,11 @@ export async function analyzeWithAI(description: string): Promise<AnalyzedRequir
       systemInstruction: SYSTEM_PROMPT,
       responseMimeType: "application/json",
       responseSchema,
+      // The SDK defaults to 5 retries with exponential backoff on 5xx errors,
+      // which can leave a user waiting 40+ seconds before our own fallback to
+      // the rule-based analyzer kicks in. One retry and a hard timeout keeps
+      // "AI is unavailable" a fast failure instead of a slow one.
+      httpOptions: { timeout: 10_000, retryOptions: { attempts: 2 } },
     },
   });
 
