@@ -460,6 +460,20 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Visual Polish Pass (second round)
+
+### One base-component change beats many per-page changes
+- **What**: The single highest-leverage edit in this pass was adding a real shadow to the base `Card` component (`src/components/ui/card.tsx`) - one file, and every card across the entire app (Overview stats, requirements, database tables, component detail panels, failure scenarios) picked up the improvement simultaneously, with zero risk of inconsistency between pages.
+- **Why this mattered**: The alternative - adding shadow classes to each individual `<Card>` usage across a dozen files - would have taken longer, and almost certainly produced subtly different shadows in different places as an artifact of copy-paste drift, undermining the "consistent visual system" goal specifically.
+- **Takeaway**: Before making a repeated visual change across many call sites, check whether it can instead be made once at the shared component definition - this is the same "single source of truth" principle already used for data (Zod schemas, the knowledge base) applied to visual design instead.
+
+### Restrained color reused across two different features
+- **What**: The stat-card icon colors on the Overview tab intentionally reuse hues adjacent to (though not identical to) the architecture diagram's group-coloring palette from the earlier UI pass - both draw from the same small, restrained set of muted colors rather than each feature picking its own arbitrary palette.
+- **Why here**: A visual system reads as deliberate when the same handful of colors recur with consistent meaning across the app, rather than every new feature introducing new colors - this is what separates "looks designed" from "looks like features were added independently over time," which is exactly the gap between a resume-project feel and a product feel.
+- **Takeaway**: When adding color to a new part of the UI, check what palette the rest of the app is already using before picking new hues - consistency of a small palette reads as more intentional than a wider one, even if the wider one is technically "prettier" component by component.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
