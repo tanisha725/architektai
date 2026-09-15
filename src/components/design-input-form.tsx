@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
@@ -202,12 +203,14 @@ export function DesignInputForm() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <Textarea
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Describe the product you want to design, e.g. 'Design Instagram for 10 million users...'"
-        className="min-h-40 resize-none text-base"
-      />
+      <div className="rounded-2xl border border-border bg-card p-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.04)] transition-shadow focus-within:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_28px_rgba(0,0,0,0.08)]">
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Describe the product you want to design, e.g. 'Design Instagram for 10 million users...'"
+          className="min-h-40 resize-none border-none text-base shadow-none focus-visible:ring-0"
+        />
+      </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -217,7 +220,7 @@ export function DesignInputForm() {
             key={example}
             type="button"
             onClick={() => handleExampleClick(example)}
-            className="rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/70"
+            className="rounded-full border border-border bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground transition-all hover:border-primary/30 hover:bg-muted hover:text-foreground"
           >
             {example.slice(0, 40)}...
           </button>
@@ -228,9 +231,9 @@ export function DesignInputForm() {
         onClick={handleSubmit}
         disabled={isSubmitting}
         size="lg"
-        className="self-start"
+        className="self-start shadow-sm"
       >
-        {isSubmitting && <Spinner className="size-4" />}
+        {isSubmitting ? <Spinner className="size-4" /> : <Sparkles className="size-4" />}
         {isSubmitting ? "Analyzing..." : "Generate Design"}
       </Button>
 

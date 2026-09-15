@@ -1,4 +1,5 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ListChecks, Users, Zap, Boxes, Database, Webhook, Map } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingRow } from "@/components/ui/spinner";
@@ -221,13 +222,13 @@ function OverviewTab({
   roadmap: RoadmapPhase[] | null;
 }) {
   const stats = [
-    { label: "Functional requirements", value: requirements.functional.length },
-    { label: "Daily active users", value: scaleEstimates ? scaleEstimates.dau.toLocaleString() : "—" },
-    { label: "Peak QPS", value: scaleEstimates ? Math.round(scaleEstimates.peakQps).toLocaleString() : "—" },
-    { label: "Architecture components", value: architecture?.components.length ?? "—" },
-    { label: "Database tables", value: databaseSchema?.tables.length ?? "—" },
-    { label: "API endpoints", value: apiEndpoints?.length ?? "—" },
-    { label: "Roadmap phases", value: roadmap?.length ?? "—" },
+    { label: "Functional requirements", value: requirements.functional.length, icon: ListChecks, color: "#2563eb" },
+    { label: "Daily active users", value: scaleEstimates ? scaleEstimates.dau.toLocaleString() : "—", icon: Users, color: "#059669" },
+    { label: "Peak QPS", value: scaleEstimates ? Math.round(scaleEstimates.peakQps).toLocaleString() : "—", icon: Zap, color: "#d97706" },
+    { label: "Architecture components", value: architecture?.components.length ?? "—", icon: Boxes, color: "#7c3aed" },
+    { label: "Database tables", value: databaseSchema?.tables.length ?? "—", icon: Database, color: "#0891b2" },
+    { label: "API endpoints", value: apiEndpoints?.length ?? "—", icon: Webhook, color: "#db2777" },
+    { label: "Roadmap phases", value: roadmap?.length ?? "—", icon: Map, color: "#64748b" },
   ];
 
   // "Key decisions" - the infrastructure choices (KB-grounded components have
@@ -246,9 +247,17 @@ function OverviewTab({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.label}>
-            <CardContent className="py-4">
-              <p className="font-mono text-2xl font-semibold">{stat.value}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{stat.label}</p>
+            <CardContent className="flex items-start justify-between py-4">
+              <div>
+                <p className="font-mono text-2xl font-semibold">{stat.value}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{stat.label}</p>
+              </div>
+              <span
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg"
+                style={{ background: `${stat.color}1a`, color: stat.color }}
+              >
+                <stat.icon className="size-4" />
+              </span>
             </CardContent>
           </Card>
         ))}
