@@ -58,6 +58,30 @@ export const AIEntitySchema = z.object({
   relationships: z.array(AIRelationshipSchema),
 });
 
+export const AIFailureScenarioSchema = z.object({
+  scenario: z.string().describe("A specific failure, e.g. 'Payment provider is unreachable' or 'Primary database fails over'."),
+  impact: z.string().describe("What breaks for the user, specific to this product's workflow - not a generic statement."),
+  mitigation: z.string().describe("How the design already limits the damage (e.g. queued retries, graceful degradation)."),
+  recovery: z.string().describe("What has to happen for the system to return to normal."),
+});
+
+export const AIBottleneckSchema = z.object({
+  component: z.string().describe("The component name this bottleneck applies to (must match a component's name)."),
+  reason: z.string().describe("Why THIS component, at THIS scale, is the likely constraint - reference an actual scale number."),
+  howToDetect: z.string().describe("A concrete signal that this bottleneck is actually happening (a metric, a symptom)."),
+  mitigation: z.string().describe("What to do about it, and importantly, at what point it's actually worth doing (don't over-engineer early)."),
+});
+
+export const AITenXScaleSchema = z.object({
+  fromScale: z.string().describe("Current scale in one short phrase, e.g. '5M users'."),
+  toScale: z.string().describe("10x scale in one short phrase, e.g. '50M users'."),
+  changes: z
+    .array(z.string())
+    .min(2)
+    .max(6)
+    .describe("What would need to change and why, each tied to a specific new problem 10x scale introduces - not a generic 'add more servers'."),
+});
+
 export const AIArchitectureSchema = z.object({
   domain: z.string().describe("One short phrase identifying the product domain, e.g. 'food delivery marketplace' or 'photo/video social network'."),
   components: z.array(AIComponentSchema).min(3).max(16),
@@ -72,8 +96,22 @@ export const AIArchitectureSchema = z.object({
     .min(1)
     .max(10)
     .describe("The domain's data entities (e.g. for food delivery: orders, restaurants, menu_items - NOT generic entities from a different domain)."),
+  failureScenarios: z
+    .array(AIFailureScenarioSchema)
+    .min(3)
+    .max(6)
+    .describe("Realistic failure scenarios specific to this product's domain and architecture - not generic 'the database goes down' for every product."),
+  bottlenecks: z
+    .array(AIBottleneckSchema)
+    .min(2)
+    .max(5)
+    .describe("The most likely bottlenecks given this specific workload, scale, and architecture."),
+  tenXScale: AITenXScaleSchema,
 });
 
 export type AIArchitecture = z.infer<typeof AIArchitectureSchema>;
 export type AIComponent = z.infer<typeof AIComponentSchema>;
 export type AIEntity = z.infer<typeof AIEntitySchema>;
+export type AIFailureScenario = z.infer<typeof AIFailureScenarioSchema>;
+export type AIBottleneck = z.infer<typeof AIBottleneckSchema>;
+export type AITenXScale = z.infer<typeof AITenXScaleSchema>;

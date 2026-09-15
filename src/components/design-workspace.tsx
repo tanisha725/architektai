@@ -10,6 +10,7 @@ import { ApiResult } from "@/components/api-result";
 import { RoadmapResult } from "@/components/roadmap-result";
 import { InterviewTab } from "@/components/interview-tab";
 import { ArchitectureEvolutionResult } from "@/components/architecture-evolution-result";
+import { AnalysisResult } from "@/components/analysis-result";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { EvolutionStage } from "@/types/evolution";
 import type { ScaleEstimates } from "@/types/scale";
@@ -70,6 +71,7 @@ export function DesignWorkspace({
           <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
           <TabsTrigger value="interview">Interview</TabsTrigger>
           <TabsTrigger value="evolution">Evolution</TabsTrigger>
+          <TabsTrigger value="analysis">Analysis</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" keepMounted>
@@ -123,6 +125,18 @@ export function DesignWorkspace({
 
         <TabsContent value="evolution">
           {evolutionStages ? <ArchitectureEvolutionResult stages={evolutionStages} /> : <EmptyTabState />}
+        </TabsContent>
+
+        <TabsContent value="analysis">
+          {isGeneratingArchitecture ? (
+            <LoadingRow label="Reasoning through the architecture..." />
+          ) : (
+            <AnalysisResult
+              failureScenarios={architecture?.failureScenarios}
+              bottlenecks={architecture?.bottlenecks}
+              tenXScale={architecture?.tenXScale}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>
@@ -216,16 +230,64 @@ function OverviewTab({
     { label: "Roadmap phases", value: roadmap?.length ?? "—" },
   ];
 
+  // "Key decisions" - the infrastructure choices (KB-grounded components have
+  // real alternatives; conceptual services don't), one line each.
+  const keyDecisions = architecture?.components.filter((c) => c.alternatives.length > 0) ?? [];
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {stats.map((stat) => (
-        <Card key={stat.label}>
-          <CardContent className="py-4">
-            <p className="font-mono text-2xl font-semibold">{stat.value}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{stat.label}</p>
+    <div className="flex flex-col gap-6">
+      {architecture?.domain && (
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Product</p>
+          <p className="text-lg font-semibold">{architecture.domain}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {stats.map((stat) => (
+          <Card key={stat.label}>
+            <CardContent className="py-4">
+              <p className="font-mono text-2xl font-semibold">{stat.value}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{stat.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {architecture?.designRationale && architecture.designRationale.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Why this architecture?</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol className="flex list-decimal flex-col gap-1.5 pl-4 text-sm">
+              {architecture.designRationale.slice(0, 3).map((point, i) => (
+                <li key={i}>{point}</li>
+              ))}
+            </ol>
+            {architecture.designRationale.length > 3 && (
+              <p className="mt-2 text-xs text-muted-foreground">See the Architecture tab for the full rationale.</p>
+            )}
           </CardContent>
         </Card>
-      ))}
+      )}
+
+      {keyDecisions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Key Decisions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="flex flex-col gap-2 text-sm">
+              {keyDecisions.map((c) => (
+                <li key={c.id}>
+                  <span className="font-medium">{c.name}</span> — {c.reason}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

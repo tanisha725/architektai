@@ -27,6 +27,9 @@ Rules:
 - Keep the architecture as simple as the requirements and scale actually justify - do not add a component "to look complete." A simple, well-justified architecture is better than a complex one with unjustified pieces.
 - designRationale should read as the "why this architecture" story a candidate would tell in an interview.
 - Also identify the domain's data ENTITIES (e.g. for food delivery: orders, restaurants, menu_items, delivery_partners - NOT generic entities like "posts" unless the product actually has posts). For any entity with a multi-step lifecycle (an order, a trip, a video upload), include a status/state field of type ENUM with the actual state values in sequence (e.g. CREATED, PAYMENT_PENDING, PAID, DELIVERED) - this is how a domain-specific state machine gets represented. Express foreign keys as a field on the entity plus a matching entry in that entity's relationships array.
+- Identify realistic FAILURE SCENARIOS specific to this domain and architecture - not "the database goes down" for every product. A food-delivery payment failure and a video platform's transcoding failure are different scenarios with different impacts; write the one that's actually relevant here.
+- Identify the most likely BOTTLENECKS given this specific workload and scale - reference the actual component and the actual scale number that makes it a concern.
+- Provide a 10X SCALE analysis: what would need to change if user count grew 10x, and specifically why - tie each change to a concrete new problem at that scale, not a generic "add more servers."
 
 Known technologies (the ONLY technologies you may reference by id for infrastructure components):
 ${KNOWLEDGE_BASE_TEXT}`;
@@ -84,6 +87,38 @@ const entitySchema = {
   required: ["name", "purpose", "fields", "relationships"],
 };
 
+const failureScenarioSchema = {
+  type: Type.OBJECT,
+  properties: {
+    scenario: { type: Type.STRING },
+    impact: { type: Type.STRING },
+    mitigation: { type: Type.STRING },
+    recovery: { type: Type.STRING },
+  },
+  required: ["scenario", "impact", "mitigation", "recovery"],
+};
+
+const bottleneckSchema = {
+  type: Type.OBJECT,
+  properties: {
+    component: { type: Type.STRING },
+    reason: { type: Type.STRING },
+    howToDetect: { type: Type.STRING },
+    mitigation: { type: Type.STRING },
+  },
+  required: ["component", "reason", "howToDetect", "mitigation"],
+};
+
+const tenXScaleSchema = {
+  type: Type.OBJECT,
+  properties: {
+    fromScale: { type: Type.STRING },
+    toScale: { type: Type.STRING },
+    changes: { type: Type.ARRAY, items: { type: Type.STRING } },
+  },
+  required: ["fromScale", "toScale", "changes"],
+};
+
 const responseSchema = {
   type: Type.OBJECT,
   properties: {
@@ -103,8 +138,20 @@ const responseSchema = {
     },
     designRationale: { type: Type.ARRAY, items: { type: Type.STRING } },
     entities: { type: Type.ARRAY, items: entitySchema },
+    failureScenarios: { type: Type.ARRAY, items: failureScenarioSchema },
+    bottlenecks: { type: Type.ARRAY, items: bottleneckSchema },
+    tenXScale: tenXScaleSchema,
   },
-  required: ["domain", "components", "connections", "designRationale", "entities"],
+  required: [
+    "domain",
+    "components",
+    "connections",
+    "designRationale",
+    "entities",
+    "failureScenarios",
+    "bottlenecks",
+    "tenXScale",
+  ],
 };
 
 export async function generateArchitectureWithAI(
@@ -190,5 +237,8 @@ export function toArchitecture(ai: AIArchitecture): Architecture {
     connections: ai.connections,
     domain: ai.domain,
     designRationale: ai.designRationale,
+    failureScenarios: ai.failureScenarios,
+    bottlenecks: ai.bottlenecks,
+    tenXScale: ai.tenXScale,
   };
 }
