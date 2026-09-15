@@ -353,6 +353,35 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 14 — Persistence (PostgreSQL via Neon + Prisma)
+
+### What an ORM is actually for
+- **What**: Prisma generates a fully-typed database client from one schema file (`schema.prisma`), and manages versioned migrations that transform the real database as that schema changes - instead of hand-writing SQL strings and manually keeping a database in sync with code.
+- **Why here**: This is the same "single source of truth generates multiple things" idea as Zod (one schema -> runtime validation + TypeScript type) and the architecture planner (one knowledge base -> selection + explanation text) - here, one schema file drives both the TypeScript types *and* the actual Postgres table structure.
+- **Takeaway**: A recurring shape in this project: whenever two things need to stay in sync (a type and a validator, a database and its migrations, a UI and the state driving it), look for a way to generate one from the other rather than maintaining both by hand.
+
+### JSON columns as a deliberate, justified simplification
+- **What**: The `Design` model stores `requirements`, `architecture`, `databaseSchema`, etc. as JSON columns in one row, rather than normalizing them into a dozen relational tables mirroring the TypeScript types.
+- **Why here**: This data is generated output that's always fetched and rendered as a complete whole (by design ID) - never queried piece-by-piece ("find all designs using Redis"). Matching storage shape to actual access pattern is the same reasoning as Phase 9's normalization discussion, applied in the opposite direction: normalize when you need to query pieces independently, denormalize (JSON blob) when you always read/write the whole thing together.
+- **Takeaway**: "Normalize everything" isn't a universal rule - it's a tool for a specific access pattern (independent querying of parts). When that pattern doesn't apply, a JSON column is the honest, simpler choice, not a shortcut.
+
+### A real, current-generation breaking change hit head-on
+- **What**: Prisma 7 removed the `url` field from the schema file's `datasource` block entirely - a genuine breaking change from the version most tutorials and training data describe. The CLI's own error message named the fix directly: pass a connection `adapter` to the `PrismaClient` constructor instead.
+- **How it was resolved without guessing**: Read the actual installed adapter package's own README (`node_modules/@prisma/adapter-neon/README.md`) for the exact real usage (`PrismaNeon`, `neonConfig.webSocketConstructor`), rather than trying to recall or infer the pattern - continuing the same discipline from the Gemini model-name incident: check the artifact itself, not a description of it.
+- **Takeaway**: Fast-moving tools (Prisma just had a major version bump) will diverge from training-data patterns in ways that are individually surprising but structurally predictable - config surface moves, defaults change, patterns get replaced. The fix is never to guess harder; it's to read the actual error, then the actual installed source, and let those be more authoritative than memory.
+
+### Pinning versions is worth doing proactively, not just reactively
+- **What**: `npm install prisma` alone resolved to an unstable `8.0.0-rc.15` release candidate for the CLI, while `@prisma/client` correctly resolved to stable `7.10.0` - a silent major-version mismatch between two packages meant to work together, caught by comparing the actual installed versions before writing any code against them.
+- **Why it mattered**: An RC CLI paired with a stable client is exactly the kind of mismatch that produces confusing, hard-to-diagnose errors down the line - not because either package is broken, but because they were never meant to be paired.
+- **Takeaway**: When installing a multi-package toolchain (a CLI + its runtime library), verify both resolved to compatible, intentional versions before building anything on top - `npm view <pkg> versions` and a quick diff of `package.json` takes seconds and prevents debugging a problem that isn't really in your code at all.
+
+### Scaffolding tools can install more than you asked for
+- **What**: `prisma init` silently added `.claude/skills/`, `.windsurf/skills/`, `.agents/skills/`, and `skills-lock.json` to the repo - AI-coding-assistant reference documentation, unrelated to the database setup that was actually requested.
+- **Why it mattered here specifically**: One of those directories (`.claude/`) directly conflicted with an explicit standing instruction never to mention Claude anywhere in this repo - the kind of thing that's easy to miss if you don't actually read what a scaffolding command touched.
+- **Takeaway**: Same lesson as Phase 1's `CLAUDE.md` deletion, recurring with a different tool - always check `git status` after running a project-generator command, not just the files you expected it to create. Tools increasingly bundle their own AI-agent tooling by default, and it's worth an explicit decision whether to keep it, not an assumption that "init" only does the one thing it was invoked for.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
