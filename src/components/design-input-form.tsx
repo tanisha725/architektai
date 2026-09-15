@@ -7,9 +7,11 @@ import { RequirementsResult } from "@/components/requirements-result";
 import { ScaleEstimator } from "@/components/scale-estimator";
 import { ArchitectureDiagram } from "@/components/architecture-diagram";
 import { DatabaseSchemaResult } from "@/components/database-schema-result";
+import { ApiResult } from "@/components/api-result";
 import { extractApproxUserCount } from "@/lib/scale-estimator";
 import { planArchitecture } from "@/lib/architecture-planner";
 import { generateDatabaseSchema } from "@/lib/schema-generator";
+import { generateApiEndpoints } from "@/lib/api-generator";
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { ScaleEstimates } from "@/types/scale";
 
@@ -41,6 +43,11 @@ export function DesignInputForm() {
     if (!requirements) return null;
     return generateDatabaseSchema(requirements);
   }, [requirements]);
+
+  const apiEndpoints = useMemo(() => {
+    if (!requirements || !databaseSchema) return null;
+    return generateApiEndpoints(requirements, databaseSchema);
+  }, [requirements, databaseSchema]);
 
   function handleExampleClick(example: string) {
     setDescription(example);
@@ -136,6 +143,12 @@ export function DesignInputForm() {
             <div>
               <h2 className="mb-3 text-sm font-medium">Database Schema</h2>
               <DatabaseSchemaResult schema={databaseSchema} />
+            </div>
+          )}
+          {apiEndpoints && (
+            <div>
+              <h2 className="mb-3 text-sm font-medium">API Design</h2>
+              <ApiResult endpoints={apiEndpoints} />
             </div>
           )}
         </div>
