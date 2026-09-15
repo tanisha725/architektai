@@ -440,6 +440,26 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase C + D — Prominent Rationale, Failure/Bottleneck/10x-Scale Analysis
+
+### A third extension of the same AI call, and where that pattern stops paying off
+- **What**: Failure scenarios, bottlenecks, and 10x-scale analysis were added as three more fields on the *same* architecture-generation response - the third time this session a new piece of structured output was folded into one existing call instead of a new one (after entities in Phase B).
+- **Why this kept working**: All three genuinely need the same context the architecture call already has (domain, scale, the chosen components) - there was no new information to fetch, just more reasoning to ask for from data already in hand.
+- **Where the pattern would stop working**: If a future feature needed context the architecture call *doesn't* have (e.g. something scoped to a single component a user clicks on, evaluated on demand, or requiring a live external lookup), bolting it onto this same call would mean fetching a full architecture reasoning pass just to answer a narrow question - at that point a separate, smaller call would be the right the call, not more fields on this one.
+- **Takeaway**: "Extend the existing call" is a good default when the new output is a natural extension of context the call already has - it stops being the right choice once the new feature's information need diverges from what triggered the original call in the first place. Worth checking that divergence explicitly before reflexively bolting on one more field.
+
+### An honest empty state instead of a hidden feature
+- **What**: `AnalysisResult` explicitly detects when there's nothing to show and explains *why* ("requires the AI-generated architecture... rule-based fallback doesn't produce this") and *what to do about it* ("Regenerate" once AI is available) - rather than an empty tab, a generic "no data," or hiding the tab entirely when there's nothing to show.
+- **Why this mattered in practice**: This tab was verified live, in-browser, against the rule-based fallback exclusively (Gemini quota still exhausted all session) - and that's precisely the state most users would hit on a fresh, keyless setup. An empty state that doesn't explain itself would look like a bug to exactly the audience most likely to see it first.
+- **Takeaway**: For a feature that has a real "not available in this mode" state (not just "still loading"), writing that state's copy deserves the same care as the feature's main content - it's not a fallback to add later, it's the state a meaningful fraction of users will actually encounter.
+
+### Verification method held steady across three phases under the same real constraint
+- **What**: Phase C/D was verified the same way as Phase A and B: Zod schema validation against hand-crafted realistic data (including deliberately re-triggering the `.min(3)` components constraint to confirm it's actually enforced, not just declared), plus a live in-browser check of the fallback path end-to-end.
+- **Why this is worth naming again**: The Gemini quota didn't reset once across three full phases of work in one extended session. Rather than treating that as a blocker to work around once, the same two-track verification approach (schema-level correctness now, live model behavior later) was applied consistently each time new AI-touching code shipped - which is what made it possible to keep building with real confidence instead of either stalling or shipping unverified code.
+- **Takeaway**: A verification strategy that survives a real, sustained external constraint (not just a single outage) is worth recognizing as a durable pattern, not a one-off workaround - it's the same "test what you can, name what you can't" discipline that's been consistent since the first Gemini incident, now proven across multiple consecutive features under the same blocking condition.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
