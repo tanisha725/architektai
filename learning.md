@@ -337,6 +337,22 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase 13 — Architecture Evolution (and a real `keepMounted` regression)
+
+### Reusing a planner across synthetic inputs to tell a story
+- **What**: `generateArchitectureEvolution()` calls the *existing* `planArchitecture()` three times with fixed scale tiers (10K/1M/10M users), diffing each stage's component set against the previous one to compute what was added and why.
+- **Why here**: No new decision logic was needed - the "why does architecture change with scale" story falls directly out of the same threshold (`isLargeScale`) already driving the single Architecture tab. Running it at three different inputs and diffing the outputs turns one generator into a narrative for free.
+- **Takeaway**: When a generator's output already depends on a threshold, sweeping that generator across representative inputs and diffing consecutive outputs is a cheap way to visualize *when* a threshold matters, without writing any new business logic.
+
+### A wrong fix that looked plausible, verified empirically instead of assumed
+- **What**: The Evolution tab's diagrams rendered cropped/broken - only fragments of nodes visible, mostly empty space. First fix attempt: add an `onInit` handler that re-calls `fitView()` on a `requestAnimationFrame` tick, on the theory that layout just hadn't settled yet at mount. Rebuilt, re-tested - **still broken**, identically.
+- **Why the first fix failed**: The real cause was `keepMounted` rendering the tab panel while it was inactive (hidden via `display: none` or similar) - a hidden element has a zero-size layout box *regardless of timing*. No amount of delayed retry fixes a measurement taken against an element with no layout at all; the fix needed to address *visibility*, not *timing*.
+- **How the real cause was found**: Instead of trying more timing-based patches, went back to first principles - checked whether the *already-verified-working* single Architecture tab was secretly broken too, under the same conditions. It was. That ruled out "Evolution-specific" theories and pointed straight at `keepMounted` (the one thing common to both, added in the immediately preceding phase).
+- **The actual fix**: Removed `keepMounted` from every tab whose content doesn't need to be mounted-while-hidden for a real reason - re-examining each tab's actual requirement (not just leaving Phase 10.5's blanket fix in place) showed only Scale (must mount to report estimates upward) and Interview (preserves in-progress state across tab switches) genuinely need it. Architecture, Database, API, Roadmap, Requirements, and Evolution all derive their content from the parent's already-computed state regardless of whether their tab panel is mounted - removing `keepMounted` from them cost nothing and let React Flow mount into a real, visible, correctly-sized container.
+- **Takeaway**: When a first fix attempt doesn't work, that's a signal the mental model of the bug is wrong, not that the fix needs more tuning (a longer delay, a second retry). Re-verifying "is the thing I thought was working actually working, under the same conditions as the thing that's broken" is a fast way to find the real shared cause - faster than iterating on a fix built on an unconfirmed theory. This is also a case where applying a fix too broadly (Phase 10.5's blanket `keepMounted` on every tab) created a new bug two phases later - worth periodically re-examining whether an earlier broad fix is still the narrowest fix that solves the original problem.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
