@@ -406,6 +406,26 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase B — Domain-Aware Database & API Generation
+
+### One AI call reused, not a second one added
+- **What**: Rather than a dedicated LLM call for database schema generation, the existing architecture-generation call was extended to also return domain entities in the same response - `generateDatabaseSchemaFromEntities()` and `generateApiEndpointsFromEntities()` are then pure, deterministic functions over that data, no additional AI round-trip.
+- **Why here**: The architecture-generation prompt already reasons about the domain in depth - asking it to also name the data entities it implies costs a handful of extra output tokens, not a whole extra request's worth of latency and cost. This directly serves the "avoid unnecessary AI calls" cost-control principle from the audit.
+- **Takeaway**: Before adding a new AI call for a new piece of structured output, check whether an *existing* call already has the context needed to produce it - extending one well-grounded prompt is usually cheaper and more consistent than a second independent one that has to re-derive the same domain understanding.
+
+### A regression caught by re-examining an old assumption, not a new bug report
+- **What**: `roadmap-generator.ts` matched conditional phases against `component.id` values like `"cache"` and `"message-queue"` - ids the rule-based planner happened to assign predictably. Once Phase A let the AI name components freely (e.g. "redis-cache-layer"), those checks would have silently stopped matching, and roadmap phases like "Caching Layer" would never appear again even when Redis clearly was in the architecture.
+- **How it was found**: Not from testing the roadmap directly - from re-reading `roadmap-generator.ts` while working on a related file and recognizing that "match by id" was an assumption Phase A had quietly invalidated. No error, no failing test - just a hidden coupling between two files that had drifted out of sync.
+- **The fix, and why it's more robust going forward**: Switched to matching against `technologyId` - which is guaranteed to be one of the fixed knowledge-base ids (`"redis"`, `"message-queue"`, etc.) regardless of what a human or an AI names the component around it. This decouples "what the component is called" from "what the component's phase-relevant category is."
+- **Takeaway**: When one generator's output feeds another generator's logic (architecture -> roadmap), a change that only touches the *producer* (letting the AI choose component ids) can silently break the *consumer* (roadmap's keyword matching) without either file's own tests failing. Worth deliberately re-checking every downstream consumer of a data shape whenever a producer's freedom expands - not just checking that the producer itself still validates.
+
+### Encoding a state machine directly in the schema, not as prose
+- **What**: An entity field can be `type: "ENUM"` with an explicit `enumValues` array in the order they occur (e.g. an order's `status`: `CREATED, PAYMENT_PENDING, PAID, ..., DELIVERED`) - this shows up as a real typed column (`ENUM(CREATED, PAYMENT_PENDING, ...)`) in the generated schema, not just a sentence describing that orders "have a lifecycle."
+- **Why here**: This is what turns "the system should model an order state machine" from a design *idea* into a design *artifact* someone could actually build against - a column definition with explicit valid states is directly actionable, a paragraph about state machines isn't.
+- **Takeaway**: When a domain concept has a natural structured representation (an enum, a foreign key, a required field), encode it in the structured data the AI already produces, rather than leaving it as unstructured explanatory text elsewhere - structured output should carry as much of the actual meaning as the schema can express, not just the parts that map cleanly onto existing fields.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
