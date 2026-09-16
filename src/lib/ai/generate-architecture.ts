@@ -5,7 +5,16 @@ import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { ScaleEstimates } from "@/types/scale";
 import type { Architecture, ArchitectureComponent } from "@/types/architecture";
 
-const HTTP_OPTIONS = { timeout: 15_000, retryOptions: { attempts: 2 } };
+// This call now generates far more structured output than when this timeout
+// was first tuned (Phase A) - architecture + domain entities + failure
+// scenarios + bottlenecks + 10x-scale analysis, all in one response. 15s was
+// too short and caused genuine DEADLINE_EXCEEDED errors even at 30s, not just
+// quota issues. Verified Vercel's Fluid Compute default (300s on Hobby) isn't
+// the binding constraint here, so there's room to give this real generation
+// time rather than fail fast. A single longer attempt (no retry) still bounds
+// worst-case latency better than two attempts that both fail the same way -
+// if it still fails, the user has an explicit "Regenerate" button.
+const HTTP_OPTIONS = { timeout: 45_000, retryOptions: { attempts: 1 } };
 
 const KNOWLEDGE_BASE_TEXT = TECHNOLOGIES.map(
   (t) =>
