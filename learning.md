@@ -493,6 +493,20 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## Phase F — Interview Mode Re-grounding
+
+### A feature that "still worked" but was silently leaving value on the table
+- **What**: `buildDesignSummary()` compiled without errors, the Interview tab rendered fine, and interview questions were still generated successfully throughout Phases A-E - nothing was actually *broken*. But the function simply never read `architecture.domain`, `designRationale`, `failureScenarios`, `bottlenecks`, or `tenXScale`, even after all of those became real, available data. The audit item ("re-verify Interview mode against the new architecture shape") wasn't chasing a bug - it was catching a feature that had quietly stopped keeping pace with what the rest of the app could now do.
+- **Why this matters as its own category of issue, distinct from a bug**: Nothing would have surfaced this without deliberately asking "does this still make full use of what's available," since there was no error, no failing test, no visibly wrong output - just an opportunity the code wasn't taking. This is a different failure mode than the roadmap-generator id-matching bug or the too-short timeout - those broke something; this just under-used something.
+- **Takeaway**: When a data shape a feature depends on grows richer over time (as `Architecture` did across Phases A-D), it's worth deliberately re-reading every consumer of that shape and asking "would this be meaningfully better if it used the new fields," not just "does it still compile against them" - the second question a type checker answers for free; the first one doesn't get asked unless someone asks it.
+
+### Deliberately pointing one AI call at another AI call's prior output
+- **What**: The interview prompt now explicitly instructs the model to build questions from the "Known bottlenecks"/"Known failure scenarios"/"10x scale" facts already present in the design summary, rather than reasoning about bottlenecks and failures independently a second time.
+- **Why this is worth doing deliberately, not just implicitly hoping the context gets used**: An LLM given relevant facts in its context doesn't reliably center its response on them unless told to - it can just as easily generate a plausible-sounding but different bottleneck than the one already shown to the user on the Analysis tab, which would look like an inconsistency bug even though both answers might individually be reasonable engineering opinions.
+- **Takeaway**: When one AI-generated artifact is meant to build on another AI-generated artifact's conclusions (not just its raw data), say so explicitly in the prompt - "use these specific facts" is a different, stronger instruction than "here is some context," and the gap between them is exactly where two AI outputs can quietly contradict each other.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
