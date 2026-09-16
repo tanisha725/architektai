@@ -474,6 +474,25 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## First Live Verification - the Zomato Acceptance Test
+
+### Two distinct failure modes discovered by finally reaching live traffic
+- **What**: Once the daily quota reset, live testing immediately surfaced two real, previously-invisible problems: a *per-minute* rate limit (5 requests/minute) separate from the daily cap, hit by a test script firing requests back-to-back; and genuine `503`/`504` errors from Gemini's own infrastructure - not quota, not a bug in this app, just the free-tier model occasionally overloaded or the response genuinely taking longer than the tuned timeout allowed.
+- **Why these were invisible until now**: Every prior verification pass (Phases A-D) used hand-crafted Zod-validated data specifically because live calls were quota-blocked - which correctly verified the *code paths* but had no way to reveal timing behavior, rate limits, or infrastructure flakiness, since none of those exist in a hand-crafted JSON object.
+- **Takeaway**: Schema/logic verification and live-traffic verification catch categorically different classes of bugs - one validates "does the code handle this shape of data correctly," the other validates "does the system behave correctly under real latency, real rate limits, real intermittent failures." Neither substitutes for the other; a long quota-blocked stretch means real verification debt is quietly accumulating even while confidence feels reasonably high.
+
+### A timeout tuned for a small response silently became wrong as the response grew
+- **What**: The 15s (later 30s) timeout on architecture generation was tuned back when the response was just architecture + entities. By the time failure scenarios, bottlenecks, and 10x-scale analysis were added on top (Phase C/D), the same call could legitimately need 35+ seconds to complete - and nothing about adding those fields felt like it should have touched the timeout, so it wasn't revisited until a live 504 forced the question.
+- **How it was fixed correctly, not just patched**: Before just cranking the number up, checked whether Vercel's own function timeout would become the new binding constraint - looked it up rather than assuming, and learned Fluid Compute's Hobby-tier default (300s) has enormous headroom, so extending our own timeout to 45s was safe with room to spare.
+- **Takeaway**: A timeout, retry count, or rate limit tuned for one version of a call is a piece of configuration that silently drifts out of correctness as the call's actual workload grows - it's not "set once," it's coupled to how much work the call does, and deserves re-examination whenever that scope expands materially (the same lesson as Phase B's roadmap-generator id-matching bug, in a different guise: an earlier decision's assumptions quietly invalidated by later feature growth).
+
+### The payoff of a long quota-blocked stretch, seen all at once
+- **What**: The Zomato acceptance test succeeded completely on the first true attempt once the timeout was fixed: domain-specific service names (Order Processing Service, not "Backend"), correct technology grounding (PostgreSQL for ACID order consistency, a geospatial index for driver matching, a message queue for event-driven state, an external payment provider), domain-specific entities (User/Restaurant/MenuItem/Order/Payment, not generic posts/likes), failure scenarios tied to the actual domain (payment outage during dinner rush, not "the database goes down"), and a 10x-scale analysis reasoning about database sharding by region and gRPC streaming for location updates - not a single generic statement anywhere in the output.
+- **Why this validates the whole session's approach, not just this one feature**: Every piece of this - the knowledge-base grounding, the fact/analysis split, the entity-to-schema conversion, the Zod hallucination guardrail - had only ever been verified against hand-crafted data until this moment. Seeing it all cohere correctly on a real, unscripted model response is the actual confirmation that the architecture built across Phases A-D was sound, not just internally consistent.
+- **Takeaway**: A verification strategy built entirely on substitutes (hand-crafted data, code-path checks, graceful fallbacks) can carry a project a very long way, but it's provisional confidence, not final confidence - the first real end-to-end success is still a distinct, meaningful milestone worth recognizing as different in kind from everything that came before it, not just "one more test that passed."
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
