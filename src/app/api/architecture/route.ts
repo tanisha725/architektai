@@ -11,6 +11,7 @@ import type { ApiEndpoint } from "@/types/api";
 interface ArchitectureResult {
   architecture: Architecture;
   source: "ai" | "rule-based";
+  provider?: "gemini" | "groq";
   // Only present when source is "ai" - derived from the AI's domain entities.
   // When null, the caller should fall back to the requirement-text-based
   // rule-based schema/API generators instead.
@@ -33,10 +34,11 @@ async function getArchitecture(
   }
 
   try {
-    const aiArchitecture = await generateArchitectureWithAI(description, requirements, scale);
+    const { architecture: aiArchitecture, provider } = await generateArchitectureWithAI(description, requirements, scale);
     return {
       architecture: toArchitecture(aiArchitecture),
       source: "ai",
+      provider,
       databaseSchema: generateDatabaseSchemaFromEntities(aiArchitecture.entities),
       apiEndpoints: generateApiEndpointsFromEntities(aiArchitecture.entities),
     };

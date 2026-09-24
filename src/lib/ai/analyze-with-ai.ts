@@ -60,16 +60,21 @@ async function analyzeWithGemini(description: string): Promise<AnalyzedRequireme
   return AnalyzedRequirementsSchema.parse(JSON.parse(response.text));
 }
 
-export async function analyzeWithAI(description: string): Promise<AnalyzedRequirements> {
+export async function analyzeWithAI(
+  description: string
+): Promise<{ requirements: AnalyzedRequirements; provider: "gemini" | "groq" }> {
   if (!process.env.GEMINI_API_KEY && hasGroqKey()) {
-    return generateJsonWithGroq(AnalyzedRequirementsSchema, "analyzed_requirements", SYSTEM_PROMPT, description);
+    const requirements = await generateJsonWithGroq(AnalyzedRequirementsSchema, "analyzed_requirements", SYSTEM_PROMPT, description);
+    return { requirements, provider: "groq" };
   }
 
   try {
-    return await analyzeWithGemini(description);
+    const requirements = await analyzeWithGemini(description);
+    return { requirements, provider: "gemini" };
   } catch (err) {
     if (!hasGroqKey()) throw err;
     console.error("Gemini analysis failed, falling back to Groq:", err);
-    return generateJsonWithGroq(AnalyzedRequirementsSchema, "analyzed_requirements", SYSTEM_PROMPT, description);
+    const requirements = await generateJsonWithGroq(AnalyzedRequirementsSchema, "analyzed_requirements", SYSTEM_PROMPT, description);
+    return { requirements, provider: "groq" };
   }
 }

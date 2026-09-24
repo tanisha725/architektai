@@ -208,19 +208,22 @@ export async function generateArchitectureWithAI(
   description: string,
   requirements: AnalyzedRequirements,
   scale: ScaleEstimates
-): Promise<AIArchitecture> {
+): Promise<{ architecture: AIArchitecture; provider: "gemini" | "groq" }> {
   const userPrompt = buildUserPrompt(description, requirements, scale);
 
   if (!process.env.GEMINI_API_KEY && hasGroqKey()) {
-    return generateJsonWithGroq(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000, 6800);
+    const architecture = await generateJsonWithGroq(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000, 6800);
+    return { architecture, provider: "groq" };
   }
 
   try {
-    return await generateArchitectureWithGemini(userPrompt);
+    const architecture = await generateArchitectureWithGemini(userPrompt);
+    return { architecture, provider: "gemini" };
   } catch (err) {
     if (!hasGroqKey()) throw err;
     console.error("Gemini architecture generation failed, falling back to Groq:", err);
-    return generateJsonWithGroq(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000, 6800);
+    const architecture = await generateJsonWithGroq(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000, 6800);
+    return { architecture, provider: "groq" };
   }
 }
 

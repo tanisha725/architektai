@@ -31,6 +31,7 @@ export function DesignInputForm() {
   const [error, setError] = useState<string | null>(null);
   const [requirements, setRequirements] = useState<AnalyzedRequirements | null>(null);
   const [analysisSource, setAnalysisSource] = useState<"ai" | "rule-based" | null>(null);
+  const [analysisProvider, setAnalysisProvider] = useState<"gemini" | "groq" | null>(null);
   const [analysisFallbackReason, setAnalysisFallbackReason] = useState<"no-api-key" | "ai-unavailable" | null>(null);
   const [approxUserCount, setApproxUserCount] = useState<number | undefined>(undefined);
   const [scaleEstimates, setScaleEstimates] = useState<ScaleEstimates | null>(null);
@@ -40,6 +41,7 @@ export function DesignInputForm() {
 
   const [architecture, setArchitecture] = useState<Architecture | null>(null);
   const [architectureSource, setArchitectureSource] = useState<"ai" | "rule-based" | null>(null);
+  const [architectureProvider, setArchitectureProvider] = useState<"gemini" | "groq" | null>(null);
   const [isGeneratingArchitecture, setIsGeneratingArchitecture] = useState(false);
   const [architectureError, setArchitectureError] = useState<string | null>(null);
   // Domain-derived schema/API from the AI's entities - only set when
@@ -70,6 +72,7 @@ export function DesignInputForm() {
         if (!response.ok) throw new Error(data?.error ?? "Failed to generate architecture.");
         setArchitecture(data.architecture);
         setArchitectureSource(data.source ?? null);
+        setArchitectureProvider(data.provider ?? null);
         setAiDatabaseSchema(data.databaseSchema ?? null);
         setAiApiEndpoints(data.apiEndpoints ?? null);
       } catch (err) {
@@ -174,6 +177,7 @@ export function DesignInputForm() {
     setSaveError(null);
     setArchitecture(null);
     setArchitectureSource(null);
+    setArchitectureProvider(null);
     setArchitectureError(null);
     setAiDatabaseSchema(null);
     setAiApiEndpoints(null);
@@ -194,6 +198,7 @@ export function DesignInputForm() {
       const data = await response.json();
       setRequirements(data.requirements);
       setAnalysisSource(data.source ?? null);
+      setAnalysisProvider(data.provider ?? null);
       setAnalysisFallbackReason(data.fallbackReason ?? null);
       setApproxUserCount(extractApproxUserCount(description) ?? undefined);
     } catch (err) {
@@ -244,6 +249,7 @@ export function DesignInputForm() {
           <DesignWorkspace
             requirements={requirements}
             analysisSource={analysisSource}
+            analysisProvider={analysisProvider}
             analysisFallbackReason={analysisFallbackReason}
             approxUserCount={approxUserCount}
             onEstimatesChange={handleEstimatesChange}
@@ -255,6 +261,7 @@ export function DesignInputForm() {
             designSummary={designSummary}
             evolutionStages={evolutionStages}
             architectureSource={architectureSource}
+            architectureProvider={architectureProvider}
             isGeneratingArchitecture={isGeneratingArchitecture}
             architectureError={architectureError}
             onRegenerateArchitecture={handleRegenerateArchitecture}
