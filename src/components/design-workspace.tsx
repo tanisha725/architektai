@@ -23,6 +23,7 @@ import type { RoadmapPhase } from "@/types/roadmap";
 interface DesignWorkspaceProps {
   requirements: AnalyzedRequirements;
   analysisSource: "ai" | "rule-based" | null;
+  analysisFallbackReason?: "no-api-key" | "ai-unavailable" | null;
   approxUserCount: number | undefined;
   onEstimatesChange: (estimates: ScaleEstimates) => void;
   scaleEstimates: ScaleEstimates | null;
@@ -41,6 +42,7 @@ interface DesignWorkspaceProps {
 export function DesignWorkspace({
   requirements,
   analysisSource,
+  analysisFallbackReason,
   approxUserCount,
   onEstimatesChange,
   scaleEstimates,
@@ -58,7 +60,12 @@ export function DesignWorkspace({
   return (
     <div className="mt-4 flex flex-col gap-4">
       <p className="text-xs text-muted-foreground">
-        Analyzed by: {analysisSource === "ai" ? "Gemini (AI)" : "rule-based analyzer (no API key configured)"}
+        Analyzed by:{" "}
+        {analysisSource === "ai"
+          ? "Gemini (AI)"
+          : analysisFallbackReason === "no-api-key"
+            ? "rule-based analyzer (no API key configured)"
+            : "rule-based analyzer (AI temporarily unavailable - showing a rule-based analysis instead)"}
       </p>
 
       <Tabs defaultValue="overview">

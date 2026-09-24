@@ -31,6 +31,7 @@ export function DesignInputForm() {
   const [error, setError] = useState<string | null>(null);
   const [requirements, setRequirements] = useState<AnalyzedRequirements | null>(null);
   const [analysisSource, setAnalysisSource] = useState<"ai" | "rule-based" | null>(null);
+  const [analysisFallbackReason, setAnalysisFallbackReason] = useState<"no-api-key" | "ai-unavailable" | null>(null);
   const [approxUserCount, setApproxUserCount] = useState<number | undefined>(undefined);
   const [scaleEstimates, setScaleEstimates] = useState<ScaleEstimates | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -193,6 +194,7 @@ export function DesignInputForm() {
       const data = await response.json();
       setRequirements(data.requirements);
       setAnalysisSource(data.source ?? null);
+      setAnalysisFallbackReason(data.fallbackReason ?? null);
       setApproxUserCount(extractApproxUserCount(description) ?? undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error.");
@@ -242,6 +244,7 @@ export function DesignInputForm() {
           <DesignWorkspace
             requirements={requirements}
             analysisSource={analysisSource}
+            analysisFallbackReason={analysisFallbackReason}
             approxUserCount={approxUserCount}
             onEstimatesChange={handleEstimatesChange}
             scaleEstimates={scaleEstimates}

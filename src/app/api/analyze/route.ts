@@ -6,9 +6,10 @@ import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 async function getRequirements(description: string): Promise<{
   requirements: AnalyzedRequirements;
   source: "ai" | "rule-based";
+  fallbackReason?: "no-api-key" | "ai-unavailable";
 }> {
   if (!process.env.GEMINI_API_KEY) {
-    return { requirements: analyzeRequirements(description), source: "rule-based" };
+    return { requirements: analyzeRequirements(description), source: "rule-based", fallbackReason: "no-api-key" };
   }
 
   try {
@@ -16,7 +17,7 @@ async function getRequirements(description: string): Promise<{
     return { requirements, source: "ai" };
   } catch (err) {
     console.error("AI analysis failed, falling back to rule-based analyzer:", err);
-    return { requirements: analyzeRequirements(description), source: "rule-based" };
+    return { requirements: analyzeRequirements(description), source: "rule-based", fallbackReason: "ai-unavailable" };
   }
 }
 
@@ -38,6 +39,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const { requirements, source } = await getRequirements(description);
-  return NextResponse.json({ requirements, source });
+  const { requirements, source, fallbackReason } = await getRequirements(description);
+  return NextResponse.json({ requirements, source, fallbackReason });
 }
