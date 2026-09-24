@@ -4,6 +4,7 @@ import { AIArchitectureSchema, type AIArchitecture, type AIComponent } from "@/l
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { ScaleEstimates } from "@/types/scale";
 import type { Architecture, ArchitectureComponent } from "@/types/architecture";
+import { hasOpenAIKey, generateJsonWithOpenAI } from "@/lib/ai/openai-client";
 
 // This call now generates far more structured output than when this timeout
 // was first tuned (Phase A) - architecture + domain entities + failure
@@ -163,13 +164,7 @@ const responseSchema = {
   ],
 };
 
-export async function generateArchitectureWithAI(
-  description: string,
-  requirements: AnalyzedRequirements,
-  scale: ScaleEstimates
-): Promise<AIArchitecture> {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
+function buildUserPrompt(description: string, requirements: AnalyzedRequirements, scale: ScaleEstimates): string {
   const requirementsText = [
     `Functional: ${requirements.functional.map((r) => r.text).join("; ")}`,
     `Non-functional: ${requirements.nonFunctional.map((r) => r.text).join("; ")}`,
@@ -178,9 +173,15 @@ export async function generateArchitectureWithAI(
 
   const scaleText = `${scale.dau.toLocaleString()} daily active users, ~${Math.round(scale.averageQps).toLocaleString()} average req/s, ~${Math.round(scale.peakQps).toLocaleString()} peak req/s.`;
 
+  return `Product description: ${description}\n\nRequirements:\n${requirementsText}\n\nScale: ${scaleText}`;
+}
+
+async function generateArchitectureWithGemini(userPrompt: string): Promise<AIArchitecture> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
   const response = await ai.models.generateContent({
     model: "gemini-3.6-flash",
-    contents: `Product description: ${description}\n\nRequirements:\n${requirementsText}\n\nScale: ${scaleText}`,
+    contents: userPrompt,
     config: {
       systemInstruction: SYSTEM_PROMPT,
       responseMimeType: "application/json",
@@ -200,6 +201,26 @@ export async function generateArchitectureWithAI(
   }
 
   return AIArchitectureSchema.parse(parsed);
+}
+
+export async function generateArchitectureWithAI(
+  description: string,
+  requirements: AnalyzedRequirements,
+  scale: ScaleEstimates
+): Promise<AIArchitecture> {
+  const userPrompt = buildUserPrompt(description, requirements, scale);
+
+  if (!process.env.GEMINI_API_KEY && hasOpenAIKey()) {
+    return generateJsonWithOpenAI(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000);
+  }
+
+  try {
+    return await generateArchitectureWithGemini(userPrompt);
+  } catch (err) {
+    if (!hasOpenAIKey()) throw err;
+    console.error("Gemini architecture generation failed, falling back to OpenAI:", err);
+    return generateJsonWithOpenAI(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000);
+  }
 }
 
 // Converts the AI's domain reasoning into our existing Architecture type.

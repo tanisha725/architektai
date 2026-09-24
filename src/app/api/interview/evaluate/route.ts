@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
     return NextResponse.json({
       evaluation: null,
       error: "AI evaluation is unavailable (no API key configured). Self-assess: does your answer address correctness, trade-offs, and how this scales?",

@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalyzedRequirementsSchema, type AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
+import { hasOpenAIKey, generateJsonWithOpenAI } from "@/lib/ai/openai-client";
 
 const SYSTEM_PROMPT = `You are a system design assistant that turns a product description into structured requirements.
 
@@ -31,7 +32,7 @@ const responseSchema = {
   required: ["functional", "nonFunctional", "assumptions"],
 };
 
-export async function analyzeWithAI(description: string): Promise<AnalyzedRequirements> {
+async function analyzeWithGemini(description: string): Promise<AnalyzedRequirements> {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   const response = await ai.models.generateContent({
@@ -57,4 +58,18 @@ export async function analyzeWithAI(description: string): Promise<AnalyzedRequir
   // the schema above can't express our exact source-field business rules the
   // way a hand-checked parse can, and it's cheap insurance against drift.
   return AnalyzedRequirementsSchema.parse(JSON.parse(response.text));
+}
+
+export async function analyzeWithAI(description: string): Promise<AnalyzedRequirements> {
+  if (!process.env.GEMINI_API_KEY && hasOpenAIKey()) {
+    return generateJsonWithOpenAI(AnalyzedRequirementsSchema, "analyzed_requirements", SYSTEM_PROMPT, description);
+  }
+
+  try {
+    return await analyzeWithGemini(description);
+  } catch (err) {
+    if (!hasOpenAIKey()) throw err;
+    console.error("Gemini analysis failed, falling back to OpenAI:", err);
+    return generateJsonWithOpenAI(AnalyzedRequirementsSchema, "analyzed_requirements", SYSTEM_PROMPT, description);
+  }
 }
