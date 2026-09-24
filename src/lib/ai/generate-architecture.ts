@@ -211,7 +211,7 @@ export async function generateArchitectureWithAI(
   const userPrompt = buildUserPrompt(description, requirements, scale);
 
   if (!process.env.GEMINI_API_KEY && hasGroqKey()) {
-    return generateJsonWithGroq(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000);
+    return generateJsonWithGroq(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000, 6800);
   }
 
   try {
@@ -219,7 +219,7 @@ export async function generateArchitectureWithAI(
   } catch (err) {
     if (!hasGroqKey()) throw err;
     console.error("Gemini architecture generation failed, falling back to Groq:", err);
-    return generateJsonWithGroq(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000);
+    return generateJsonWithGroq(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000, 6800);
   }
 }
 

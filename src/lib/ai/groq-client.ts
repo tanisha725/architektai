@@ -20,7 +20,14 @@ export async function generateJsonWithGroq<T>(
   schemaName: string,
   systemPrompt: string,
   userPrompt: string,
-  timeoutMs = 20_000
+  timeoutMs = 20_000,
+  // Groq's default completion cap is too low for our larger schemas (the
+  // architecture call was truncated mid-JSON before this was set explicitly)
+  // - 4000 covers the small calls with room to spare; the architecture call
+  // passes a higher value itself. Free-tier gpt-oss-120b caps at 8000
+  // tokens/minute total (prompt + completion), so this still needs to leave
+  // room for the system+user prompt within that budget.
+  maxCompletionTokens = 4000
 ): Promise<T> {
   const client = new OpenAI({
     apiKey: process.env.GROQ_API_KEY,
@@ -36,6 +43,7 @@ export async function generateJsonWithGroq<T>(
       { role: "user", content: userPrompt },
     ],
     response_format: zodResponseFormat(schema, schemaName),
+    max_completion_tokens: maxCompletionTokens,
   });
 
   const parsed = completion.choices[0]?.message.parsed;
