@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalyzedRequirementsSchema, type AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
-import { hasOpenAIKey, generateJsonWithOpenAI } from "@/lib/ai/openai-client";
+import { hasGroqKey, generateJsonWithGroq } from "@/lib/ai/groq-client";
 
 const SYSTEM_PROMPT = `You are a system design assistant that turns a product description into structured requirements.
 
@@ -61,15 +61,15 @@ async function analyzeWithGemini(description: string): Promise<AnalyzedRequireme
 }
 
 export async function analyzeWithAI(description: string): Promise<AnalyzedRequirements> {
-  if (!process.env.GEMINI_API_KEY && hasOpenAIKey()) {
-    return generateJsonWithOpenAI(AnalyzedRequirementsSchema, "analyzed_requirements", SYSTEM_PROMPT, description);
+  if (!process.env.GEMINI_API_KEY && hasGroqKey()) {
+    return generateJsonWithGroq(AnalyzedRequirementsSchema, "analyzed_requirements", SYSTEM_PROMPT, description);
   }
 
   try {
     return await analyzeWithGemini(description);
   } catch (err) {
-    if (!hasOpenAIKey()) throw err;
-    console.error("Gemini analysis failed, falling back to OpenAI:", err);
-    return generateJsonWithOpenAI(AnalyzedRequirementsSchema, "analyzed_requirements", SYSTEM_PROMPT, description);
+    if (!hasGroqKey()) throw err;
+    console.error("Gemini analysis failed, falling back to Groq:", err);
+    return generateJsonWithGroq(AnalyzedRequirementsSchema, "analyzed_requirements", SYSTEM_PROMPT, description);
   }
 }

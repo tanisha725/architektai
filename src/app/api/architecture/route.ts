@@ -23,7 +23,7 @@ async function getArchitecture(
   requirements: AnalyzedRequirements,
   scale: ScaleEstimates
 ): Promise<ArchitectureResult> {
-  if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
+  if (!process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY) {
     return {
       architecture: planArchitecture(requirements, scale),
       source: "rule-based",

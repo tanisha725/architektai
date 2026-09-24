@@ -5,7 +5,7 @@ import {
   type InterviewQuestions,
   type InterviewEvaluation,
 } from "@/lib/schemas/interview-schema";
-import { hasOpenAIKey, generateJsonWithOpenAI } from "@/lib/ai/openai-client";
+import { hasGroqKey, generateJsonWithGroq } from "@/lib/ai/groq-client";
 
 // Same bounded timeout/retry lesson from the requirement analyzer - a slow or
 // failing AI call should fail fast, not leave the user waiting on 5 retries.
@@ -45,16 +45,16 @@ async function generateInterviewQuestionsWithGemini(designSummary: string): Prom
 export async function generateInterviewQuestions(designSummary: string): Promise<InterviewQuestions> {
   const userPrompt = `Here is a system design a candidate just produced:\n\n${designSummary}\n\n${QUESTIONS_PROMPT_PREFIX}`;
 
-  if (!process.env.GEMINI_API_KEY && hasOpenAIKey()) {
-    return generateJsonWithOpenAI(InterviewQuestionsSchema, "interview_questions", "You are a system design interviewer.", userPrompt);
+  if (!process.env.GEMINI_API_KEY && hasGroqKey()) {
+    return generateJsonWithGroq(InterviewQuestionsSchema, "interview_questions", "You are a system design interviewer.", userPrompt);
   }
 
   try {
     return await generateInterviewQuestionsWithGemini(designSummary);
   } catch (err) {
-    if (!hasOpenAIKey()) throw err;
-    console.error("Gemini interview-question generation failed, falling back to OpenAI:", err);
-    return generateJsonWithOpenAI(InterviewQuestionsSchema, "interview_questions", "You are a system design interviewer.", userPrompt);
+    if (!hasGroqKey()) throw err;
+    console.error("Gemini interview-question generation failed, falling back to Groq:", err);
+    return generateJsonWithGroq(InterviewQuestionsSchema, "interview_questions", "You are a system design interviewer.", userPrompt);
   }
 }
 
@@ -95,15 +95,15 @@ export async function evaluateInterviewAnswer(
 ): Promise<InterviewEvaluation> {
   const userPrompt = buildEvaluationPrompt(designSummary, question, answer);
 
-  if (!process.env.GEMINI_API_KEY && hasOpenAIKey()) {
-    return generateJsonWithOpenAI(InterviewEvaluationSchema, "interview_evaluation", "You are a system design interviewer.", userPrompt);
+  if (!process.env.GEMINI_API_KEY && hasGroqKey()) {
+    return generateJsonWithGroq(InterviewEvaluationSchema, "interview_evaluation", "You are a system design interviewer.", userPrompt);
   }
 
   try {
     return await evaluateInterviewAnswerWithGemini(userPrompt);
   } catch (err) {
-    if (!hasOpenAIKey()) throw err;
-    console.error("Gemini interview evaluation failed, falling back to OpenAI:", err);
-    return generateJsonWithOpenAI(InterviewEvaluationSchema, "interview_evaluation", "You are a system design interviewer.", userPrompt);
+    if (!hasGroqKey()) throw err;
+    console.error("Gemini interview evaluation failed, falling back to Groq:", err);
+    return generateJsonWithGroq(InterviewEvaluationSchema, "interview_evaluation", "You are a system design interviewer.", userPrompt);
   }
 }

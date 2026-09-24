@@ -8,7 +8,7 @@ async function getRequirements(description: string): Promise<{
   source: "ai" | "rule-based";
   fallbackReason?: "no-api-key" | "ai-unavailable";
 }> {
-  if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
+  if (!process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY) {
     return { requirements: analyzeRequirements(description), source: "rule-based", fallbackReason: "no-api-key" };
   }
 

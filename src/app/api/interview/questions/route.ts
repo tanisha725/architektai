@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "`designSummary` must be a non-empty string." }, { status: 400 });
   }
 
-  if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
+  if (!process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY) {
     return NextResponse.json({ questions: FALLBACK_QUESTIONS, source: "fallback" });
   }
 

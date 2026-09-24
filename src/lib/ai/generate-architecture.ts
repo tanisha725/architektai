@@ -4,7 +4,7 @@ import { AIArchitectureSchema, type AIArchitecture, type AIComponent } from "@/l
 import type { AnalyzedRequirements } from "@/lib/schemas/requirements-schema";
 import type { ScaleEstimates } from "@/types/scale";
 import type { Architecture, ArchitectureComponent } from "@/types/architecture";
-import { hasOpenAIKey, generateJsonWithOpenAI } from "@/lib/ai/openai-client";
+import { hasGroqKey, generateJsonWithGroq } from "@/lib/ai/groq-client";
 
 // This call now generates far more structured output than when this timeout
 // was first tuned (Phase A) - architecture + domain entities + failure
@@ -210,16 +210,16 @@ export async function generateArchitectureWithAI(
 ): Promise<AIArchitecture> {
   const userPrompt = buildUserPrompt(description, requirements, scale);
 
-  if (!process.env.GEMINI_API_KEY && hasOpenAIKey()) {
-    return generateJsonWithOpenAI(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000);
+  if (!process.env.GEMINI_API_KEY && hasGroqKey()) {
+    return generateJsonWithGroq(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000);
   }
 
   try {
     return await generateArchitectureWithGemini(userPrompt);
   } catch (err) {
-    if (!hasOpenAIKey()) throw err;
-    console.error("Gemini architecture generation failed, falling back to OpenAI:", err);
-    return generateJsonWithOpenAI(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000);
+    if (!hasGroqKey()) throw err;
+    console.error("Gemini architecture generation failed, falling back to Groq:", err);
+    return generateJsonWithGroq(AIArchitectureSchema, "architecture", SYSTEM_PROMPT, userPrompt, 45_000);
   }
 }
 
