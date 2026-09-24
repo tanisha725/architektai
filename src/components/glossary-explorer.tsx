@@ -4,6 +4,9 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Technology } from "@/lib/knowledge-base/technologies";
 import type { Concept } from "@/lib/knowledge-base/concepts";
+import { SimpleDiagram } from "@/components/diagrams/simple-diagram";
+import { CONCEPT_DIAGRAMS } from "@/components/diagrams/concept-diagrams";
+import { TECHNOLOGY_DIAGRAMS } from "@/components/diagrams/technology-diagrams";
 
 type Selected = { kind: "technology"; id: string } | { kind: "concept"; id: string } | null;
 
@@ -123,12 +126,14 @@ function ConceptDetail({
   const related = concept.relatedTechnologyIds
     .map((id) => technologies.find((t) => t.id === id))
     .filter((t): t is Technology => !!t);
+  const diagram = CONCEPT_DIAGRAMS[concept.id];
 
   return (
     <Card>
       <CardContent className="flex flex-col gap-4 pt-4">
         <h3 className="text-xl font-semibold">{concept.name}</h3>
         <SimpleExplanationBox text={concept.simpleExplanation} />
+        {diagram && <SimpleDiagram spec={diagram} />}
         <div className="grid gap-4 sm:grid-cols-2">
           <DetailRow label="What it is" value={concept.what} />
           <DetailRow label="Why it exists" value={concept.why} />
@@ -159,11 +164,13 @@ function ConceptDetail({
 }
 
 function TechnologyDetail({ technology }: { technology: Technology }) {
+  const diagram = TECHNOLOGY_DIAGRAMS[technology.id];
   return (
     <Card>
       <CardContent className="flex flex-col gap-4 pt-4">
         <h3 className="text-xl font-semibold">{technology.name}</h3>
         <SimpleExplanationBox text={technology.simpleExplanation} />
+        {diagram && <SimpleDiagram spec={diagram} />}
         <DetailRow label="What it is" value={technology.description} />
         <div className="grid gap-4 sm:grid-cols-2">
           <DetailRow label="Strengths" value={technology.strengths.join("; ")} />
