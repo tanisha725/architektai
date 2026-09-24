@@ -507,6 +507,30 @@ Each entry: **what it is**, **why we needed it here**, **key takeaway**.
 
 ---
 
+## The Learn Page - a New Content Type, Not Just a New Screen
+
+### Recognizing that two existing features had a narrower scope than the request implied
+- **What**: The request for a teaching tool with "Understand/Visualize/Scale/Compare" layers could have been read as "build four new things." Actually mapping it out first showed Visualize and Scale already existed (the diagram's click-to-explore, the Evolution tab's scale sweep) - just narrowly scoped to only work *after* generating a design from a prompt. The real gap was making that kind of exploration available *without* needing a prompt first.
+- **Why this mattered**: Building a redundant, separate "visualize" feature would have duplicated real logic (the diagram component, the click-to-detail pattern) instead of reusing it, and would have made the app inconsistent - two different UIs for "explore a component's trade-offs" depending on where you encountered it.
+- **Takeaway**: When a feature request describes several capabilities, check whether some already exist under a narrower scope before building anything - the actual gap is often "make this more broadly available," not "build this from scratch."
+
+### A genuinely new content type, not a new view of old data
+- **What**: The existing knowledge base only modeled *technologies* (concrete products: Redis, PostgreSQL). "Sharding," "Replication," "SQL vs. NoSQL," and "Microservices vs. Monolith" aren't technologies - they're strategies that apply across many different technologies. Modeling them required a new `Concept` type (`concepts.ts`), not just a new UI for the existing `Technology` type.
+- **Why the distinction mattered**: A concept and a technology answer structurally different questions - "what is Redis" vs. "when should I split my database into shards, regardless of which database." Forcing concepts into the `Technology` shape (e.g. giving "Sharding" a fake `category` and `alternatives` list) would have been a wrong-shaped compromise that confused the two ideas the glossary is specifically trying to keep distinct.
+- **Takeaway**: When new content doesn't cleanly fit an existing data shape, that's a signal to model it as its own type rather than stretching the old one - the awkwardness of stretching a shape to fit is often the first sign the two things aren't actually the same kind of thing.
+
+### "Make it simple" as a specific, checkable design requirement
+- **What**: Every technology and concept entry got a dedicated `simpleExplanation` field - one or two sentences, an everyday analogy, no jargon - rendered prominently above the technical detail, not folded into it. This was a deliberate response to "make this super simple for people to understand," not a vague aspiration but a concrete field with a concrete rule: plain language, no engineering terms, an analogy a non-engineer would recognize.
+- **Why a dedicated field instead of just writing simpler prose everywhere**: Making every field simple would have lost precision the technical audience still needs (a strength/weakness list has to be specific to be useful). Separating "the one-sentence plain version" from "the full technical detail" let both audiences get what they actually need, in the order they need it, instead of compromising both into mediocre middle ground.
+- **Takeaway**: "Make X simpler" is easiest to act on when translated into a specific, addable field or section, not a general instruction to write differently everywhere - a dedicated "plain words" slot is checkable (does every entry have one, is it actually jargon-free) in a way "write more simply" isn't.
+
+### Verifying external links is the same discipline as verifying internal facts
+- **What**: A first web search for "best free system design resources" returned almost entirely SEO listicle/aggregator sites, not the primary resources themselves. Rather than link to those aggregators (or worse, recall "famous" resource URLs from memory), each actual primary source (the GitHub repo, the book's official site, the real engineering blogs) was individually searched and confirmed before being added.
+- **Why this is the same lesson as the Gemini model-name incident, not a new one**: A wrong or dead external link is exactly the kind of "confident but unverified" claim this whole project has learned to distrust - the fact that it's a URL instead of an API parameter doesn't change the risk. The discipline built up over Phases A-F (check the real artifact, don't recall it) applies just as directly to "what's the correct URL for X," a category of claim with no compiler or Zod schema to catch it if wrong.
+- **Takeaway**: Verification discipline generalizes across very different kinds of claims - a stale library API and a stale or wrong URL are the same failure mode (confident recall standing in for a check), and the fix is the same in both cases: look it up right before using it, not from memory.
+
+---
+
 ## How to use this file
 - We add an entry **after** each concept is introduced and you've had the checkpoint questions, not before — so this reflects what you've actually learned, not just what was planned.
 - Entries stay even if we later change the implementation — this is a *learning* record, not a design doc (that's what the README and code comments are for).
