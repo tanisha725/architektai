@@ -30,6 +30,7 @@ Process (follow this order, don't skip to technology first):
 3. ONLY THEN choose components and technologies that solve those specific problems.
 
 Rules:
+- "kind" is a fixed CATEGORY, chosen only from: client, gateway, service, database, cache, queue, storage, search, cdn, geospatial, external, compute. It is NEVER the component's own name or technologyId - e.g. a component named "Load Balancer" has kind "gateway" (not "load-balancer"), a component named "Redis" has kind "cache" (not "redis"). Never invent a kind value outside this exact list.
 - Business-logic services (kind: "client", "gateway", "service") should reflect the actual domain - name them for what they do in THIS product (e.g. "Order Service", "Delivery Matching Service"), not generic names like "Backend".
 - Every infrastructure component (database/cache/queue/storage/search/cdn/geospatial/external/compute) MUST use a technologyId from the knowledge base below - you cannot invent a technology outside this list. If nothing in the list fits, omit that component rather than inventing one.
 - Never claim knowledge of a real company's actual private architecture (e.g. never say "Zomato uses Kafka for X"). Instead frame recommendations as "for a system like this, X could be appropriate because...".
