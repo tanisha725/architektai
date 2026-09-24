@@ -2,6 +2,10 @@ export interface Technology {
   id: string;
   name: string;
   category: "database" | "cache" | "queue" | "storage" | "networking" | "search" | "geospatial" | "external" | "compute";
+  // A one or two sentence, jargon-free explanation using an everyday analogy -
+  // written for someone with no engineering background. This is the first
+  // thing shown in the /learn glossary, before any technical detail.
+  simpleExplanation: string;
   description: string;
   strengths: string[];
   weaknesses: string[];
@@ -18,6 +22,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "postgresql",
     name: "PostgreSQL",
     category: "database",
+    simpleExplanation:
+      "A super-organized filing cabinet for your data - everything lives in labeled folders (tables) with clear rules about how they connect, so you can pull out exactly what you need without things getting mixed up.",
     description: "A relational database that stores structured data in tables with defined relationships.",
     strengths: ["Strong consistency (ACID transactions)", "Rich querying with joins", "Mature tooling and ecosystem"],
     weaknesses: ["Harder to scale horizontally than NoSQL stores", "Schema changes require migrations"],
@@ -32,6 +38,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "mongodb",
     name: "MongoDB",
     category: "database",
+    simpleExplanation:
+      "A flexible storage box where you can toss in records that don't all look the same shape - no need to decide every field ahead of time like you would with a spreadsheet.",
     description: "A document database that stores flexible, JSON-like records without a fixed schema.",
     strengths: ["Flexible schema", "Natural fit for nested/unstructured data", "Easy horizontal scaling via sharding"],
     weaknesses: ["Weaker support for multi-record transactions historically", "Joins across collections are awkward"],
@@ -46,6 +54,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "dynamodb",
     name: "DynamoDB",
     category: "database",
+    simpleExplanation:
+      "A database Amazon runs entirely for you, engineered to stay fast and reliable no matter how many people hit it at once - you trade some flexibility for that guarantee.",
     description: "A fully managed key-value/document database built for massive, predictable-latency scale.",
     strengths: ["Near-unlimited horizontal scalability", "Consistent single-digit-millisecond latency", "No server management"],
     weaknesses: ["Limited query flexibility (design around access patterns upfront)", "Vendor lock-in (AWS)"],
@@ -60,6 +70,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "redis",
     name: "Redis",
     category: "cache",
+    simpleExplanation:
+      "A tiny, lightning-fast notepad your app keeps right next to itself, so it doesn't have to walk all the way to the 'real' filing cabinet every time it needs something it's already looked up recently.",
     description: "An in-memory key-value store used to cache frequently-read data and reduce database load.",
     strengths: ["Extremely low latency (in-memory)", "Simple data structures (strings, lists, sets, sorted sets)", "Widely supported"],
     weaknesses: ["Data is volatile unless persistence is configured", "Adds an extra moving part to operate"],
@@ -74,6 +86,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "object-storage",
     name: "Object Storage (e.g. S3)",
     category: "storage",
+    simpleExplanation:
+      "A giant, cheap warehouse for files like photos and videos - you get back a URL like a locker claim ticket, instead of stuffing the actual file into your database.",
     description: "Storage designed for large binary files (images, videos) referenced by a URL, not stored in a database.",
     strengths: ["Extremely cheap at scale", "Effectively unlimited capacity", "Offloads large files from the database"],
     weaknesses: ["Not queryable like a database", "Higher latency than in-memory or block storage"],
@@ -88,6 +102,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "cdn",
     name: "CDN (Content Delivery Network)",
     category: "networking",
+    simpleExplanation:
+      "Copies of your website's files stashed in warehouses all over the world, so people get them from whichever copy is closest instead of one far-away server every time.",
     description: "A globally distributed network of caching servers that serve static content from a location near the user.",
     strengths: ["Dramatically reduces latency for users far from origin servers", "Reduces load on origin/object storage"],
     weaknesses: ["Cache invalidation can be tricky", "Adds a layer of configuration"],
@@ -102,6 +118,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "load-balancer",
     name: "Load Balancer",
     category: "networking",
+    simpleExplanation:
+      "A traffic cop standing in front of several identical servers, waving each new request toward whichever one is free right now.",
     description: "Distributes incoming traffic across multiple backend server instances.",
     strengths: ["Enables horizontal scaling of backend servers", "Improves availability (routes around unhealthy instances)"],
     weaknesses: ["A single load balancer can itself be a bottleneck/failure point without redundancy"],
@@ -116,6 +134,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "api-gateway",
     name: "API Gateway",
     category: "networking",
+    simpleExplanation:
+      "A single front desk every request has to pass through first - it checks IDs, enforces the rules, and then sends people to the right department.",
     description: "A single entry point for client requests that can handle routing, auth, and rate limiting before requests reach backend services.",
     strengths: ["Centralizes cross-cutting concerns (auth, rate limiting, logging)", "Simplifies client-facing API surface"],
     weaknesses: ["Another component to operate and monitor", "Can become a bottleneck if not scaled"],
@@ -130,6 +150,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "message-queue",
     name: "Message Queue (e.g. Kafka/RabbitMQ)",
     category: "queue",
+    simpleExplanation:
+      "A to-do list one part of your system drops tasks onto, so another part can pick them up and handle them later - without making the user wait around for it.",
     description: "A system that lets services send work to each other asynchronously instead of processing it immediately inline.",
     strengths: ["Decouples slow/unreliable work from the request path", "Absorbs traffic spikes", "Enables retries without blocking users"],
     weaknesses: ["Adds operational complexity", "Introduces eventual consistency for queued work"],
@@ -144,6 +166,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "elasticsearch",
     name: "Elasticsearch",
     category: "search",
+    simpleExplanation:
+      "A librarian who has memorized every single book in the building, so you can ask a vague question and instantly get the right shelf - instead of you scanning every book yourself.",
     description: "A search engine optimized for full-text search and complex filtering across large datasets.",
     strengths: ["Fast full-text search", "Flexible filtering/ranking", "Scales horizontally"],
     weaknesses: ["Not a system of record - typically synced from a primary database", "Operational overhead of another data store"],
@@ -158,6 +182,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "geospatial-index",
     name: "Geospatial Index (e.g. PostGIS, Redis Geo)",
     category: "geospatial",
+    simpleExplanation:
+      "A tool built specifically to answer 'what's nearby?' quickly - like a smart map that instantly points to the closest coffee shop, instead of checking every shop's address one at a time.",
     description: "A data store or index specialized for location queries - 'find things near this point' - efficiently.",
     strengths: ["Efficient proximity/radius queries", "Purpose-built for location matching (drivers, delivery, nearby search)"],
     weaknesses: ["A plain relational table scan for location queries doesn't scale past small datasets", "Adds a specialized component to operate"],
@@ -172,6 +198,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "external-payment-provider",
     name: "External Payment Provider (e.g. Stripe, Razorpay)",
     category: "external",
+    simpleExplanation:
+      "A trusted outside company that handles the scary, heavily-regulated part of taking payments, so you never have to touch anyone's actual card number.",
     description: "A third-party service that handles payment processing, so the system never directly stores card details.",
     strengths: ["Offloads PCI-DSS compliance burden entirely", "Battle-tested fraud detection and reliability"],
     weaknesses: ["Per-transaction fees", "An external dependency outside the system's own control - its outages become your outages for checkout"],
@@ -186,6 +214,8 @@ export const TECHNOLOGIES: Technology[] = [
     id: "video-transcoding",
     name: "Video Transcoding Pipeline (e.g. AWS MediaConvert, self-hosted ffmpeg workers)",
     category: "compute",
+    simpleExplanation:
+      "A machine that takes one uploaded video and automatically makes several versions of it in different qualities, so it plays smoothly whether someone's on fast Wi-Fi or spotty mobile data.",
     description: "A processing pipeline that converts uploaded video into multiple resolutions/bitrates for adaptive streaming playback.",
     strengths: ["Enables smooth playback across varying network conditions (adaptive bitrate)", "Normalizes inconsistent upload formats"],
     weaknesses: ["Computationally expensive", "Adds meaningful delay between upload and the video becoming watchable"],

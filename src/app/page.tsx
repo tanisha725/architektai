@@ -1,9 +1,18 @@
+import Link from "next/link";
 import { DesignInputForm } from "@/components/design-input-form";
-import { Sparkles } from "lucide-react";
+import { Sparkles, BookOpen } from "lucide-react";
 
 export default function Home() {
   return (
     <div className="relative flex min-h-screen flex-col items-center overflow-hidden bg-background px-6 py-20 sm:py-28">
+      <Link
+        href="/learn"
+        className="absolute right-6 top-6 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <BookOpen className="size-4" />
+        Learn system design
+      </Link>
+
       {/* Subtle background texture - a soft radial glow behind the hero plus a
           fine dot grid, restrained enough to read as "product", not "flashy". */}
       <div
