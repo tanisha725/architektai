@@ -39,8 +39,15 @@ export const AIConnectionSchema = z.object({
 export const AIFieldSchema = z.object({
   name: z.string().describe("Column name in snake_case, e.g. 'delivery_status'."),
   type: z.enum(["UUID", "VARCHAR", "TEXT", "INTEGER", "DECIMAL", "BOOLEAN", "TIMESTAMP", "ENUM"]),
+  // Both `.nullable()` and `.optional()` are needed here, not just one: Gemini
+  // may omit this key entirely for non-ENUM fields (needs `.optional()`), while
+  // OpenAI's strict structured-output mode rejects a schema field that's
+  // `.optional()` without also being `.nullable()` (it represents "absent" as
+  // an explicit null in a still-required key, not a missing key) - confirmed
+  // by a real 400 from OpenAI when this was `.optional()` alone.
   enumValues: z
     .array(z.string())
+    .nullable()
     .optional()
     .describe("Only for type ENUM - the allowed values, e.g. a state machine like ['CREATED','PAID','DELIVERED']."),
 });
